@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ─────────────────────────────────────────── */
+:root {
+  --c-bg:       #0f0f1a;
+  --c-card:     #16162a;
+  --c-border:   #2a2a45;
+  --c-ink:      #6271f1;
+  --c-ink-lite: #8194f8;
+  --c-amber:    #fbbf24;
+  --c-text:     #e8e8f4;
+  --c-muted:    #8888aa;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar            { width: 6px; }
+::-webkit-scrollbar-track      { background: var(--c-bg); }
+::-webkit-scrollbar-thumb      { background: var(--c-border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover{ background: var(--c-ink); }
+
+/* ── Components ───────────────────────────────────── */
+@layer components {
+  /* Cards */
+  .card {
+    @apply rounded-2xl border bg-surface-card border-surface-border p-6;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-xl px-5 py-2.5
+           bg-ink-600 hover:bg-ink-500 active:bg-ink-700
+           text-white font-display font-semibold text-sm
+           transition-all duration-200 shadow-lg shadow-ink-600/20
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-xl px-5 py-2.5
+           border border-surface-border hover:border-ink-500/60
+           text-[var(--c-muted)] hover:text-white
+           font-display font-semibold text-sm
+           transition-all duration-200;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full rounded-xl border border-surface-border bg-surface
+           px-4 py-2.5 text-sm text-[var(--c-text)]
+           placeholder:text-[var(--c-muted)]
+           focus:outline-none focus:border-ink-500 focus:ring-2 focus:ring-ink-500/20
+           transition-all duration-200;
+  }
+
+  /* Label */
+  .label {
+    @apply block text-xs font-display font-semibold tracking-wider
+           text-[var(--c-muted)] uppercase mb-1.5;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-0.5
+           text-xs font-mono font-medium border;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply card flex flex-col gap-1 hover:border-ink-500/40 transition-colors duration-200;
+  }
+
+  /* Glow */
+  .glow {
+    box-shadow: 0 0 40px -10px var(--c-ink);
+  }
+
+  /* Animated gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #8194f8 0%, #fbbf24 100%);
+  }
+
+  /* Progress bar track */
+  .progress-track {
+    @apply w-full h-2 rounded-full bg-surface-border overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full rounded-full bg-ink-500 transition-all duration-700 ease-out;
+  }
+}
+
+/* ── Animations ───────────────────────────────────── */
+@layer utilities {
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+}
+
+/* ── Noise overlay (subtle texture) ──────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.35;
+}
