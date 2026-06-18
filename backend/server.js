@@ -18,17 +18,17 @@ mongoose.connect(process.env.MONGO_URI)
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const auth = async (req, res, next) => {
+function auth(req, res, next) {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token' });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+    return next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
   }
-};
+}
 
 async function callAI(prompt) {
   const response = await groq.chat.completions.create({
