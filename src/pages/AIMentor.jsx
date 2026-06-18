@@ -1,194 +1,164 @@
-import { useState, useRef, useEffect } from "react";
-import { Bot, Send, Loader2, User, Trash2 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { mentorChat } from "../utils/gemini";
+import { useState, useRef, useEffect } from 'react';
+import { mentorChat } from '../utils/gemini';
 
-const SUGGESTIONS = [
-  "Explain Newton's 3rd law with examples",
-  "Give me a quick revision of integration techniques",
-  "How should I manage exam stress?",
-  "What is cybersecurity?",
-];
-
-function Message({ msg }) {
-  const isUser = msg.role === "user";
-
-  return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-          isUser
-            ? "bg-ink-600/30 border border-ink-500/40"
-            : "bg-surface-border"
-        }`}
-      >
-        {isUser ? (
-          <User size={14} className="text-ink-300" />
-        ) : (
-          <Bot size={14} className="text-[var(--c-muted)]" />
-        )}
-      </div>
-
-      <div
-        className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          isUser
-            ? "bg-ink-600/20 border border-ink-500/30 text-white rounded-tr-sm"
-            : "bg-surface-card border border-surface-border text-[var(--c-text)] rounded-tl-sm"
-        }`}
-      >
-        {msg.text}
-      </div>
-    </div>
-  );
-}
-
-export default function AIMentor() {
-  const { examConfig, language, progressPercent } = useAuth();
-
-  const mentorContext = {
-    examName: examConfig?.examName,
-    subjects: examConfig?.subjects,
-    weakTopics: examConfig?.weakTopics,
-    examDate: examConfig?.examDate,
-    progressPercent,
-  };
-
+export default function AIMentorPage({ language }) {
   const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      text: `Hi! I'm your SmartEdu AI Mentor 🎓
-Ask me anything about your studies.`,
-    },
+    { role: 'assistant', content: 'Hello! I am your AI Mentor 🎓\n\nAsk me anything about your studies — concepts, problems, exam tips, anything!\n\nI am here to help you 24/7.' }
   ]);
-
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
-  // 🔥 SAFE SEND FUNCTION (NO CRASH EVEN IF GEMINI FAILS)
-  const send = async (text) => {
-    const q = (text ?? input).trim();
-    if (!q || loading) return;
-
-    setInput("");
-
-    const userMsg = { role: "user", text: q };
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-
-    try {
-      let reply = await mentorChat(
-        q,
-        mentorContext,
-        [...messages, userMsg],
-        language
-      );
-
-      // fallback safety
-      if (!reply) reply = "I couldn't generate a response. Try again.";
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", text: reply },
-      ]);
-    } catch (e) {
-      console.log(e);
-
-      // 🔥 IMPORTANT FALLBACK (NO GEMINI = STILL WORKS)
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          text:
-            "⚠️ AI temporarily unavailable.\n\nBut I can still help:\n- Try asking simpler questions\n- Check internet/API key\n- Or refresh and retry",
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+  const formatMessage = (text) => {
+    return text.split('\n').map((line, i) => {
+      if (!line.trim()) return <div key={i} style={{ height: '8px' }} />;
+      if (line.startsWith('**') && line.endsWith('**')) {
+        return <div key={i} style={{ fontWeight: '700', color: '#1e293b', marginBottom: '4px' }}>{line.replace(/\*\*/g, '')}</div>;
+      }
+      if (line.startsWith('* ') || line.startsWith('- ')) {
+        return (
+          <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#7c3aed', fontWeight: '700', flexShrink: 0 }}>•</span>
+            <span>{line.slice(2)}</span>
+          </div>
+        );
+      }
+      if (line.match(/^\d+\./)) {
+        return (
+          <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4px', alignItems: 'flex-start' }}>
+            <span style={{ color: '#7c3aed', fontWeight: '700', flexShrink: 0 }}>{line.match(/^\d+\./)[0]}</span>
+            <span>{line.replace(/^\d+\./, '').trim()}</span>
+          </div>
+        );
+      }
+      return <div key={i} style={{ marginBottom: '4px', lineHeight: '1.6' }}>{line}</div>;
+    });
   };
 
-  const clearChat = () =>
-    setMessages([
-      {
-        role: "assistant",
-        text: "Chat cleared! Ask me anything 📚",
-      },
-    ]);
+  const handleSend = async () => {
+    const msg = input.trim();
+    if (!msg || loading) return;
+    setInput('');
+    const newMessages = [...messages, { role: 'user', content: msg }];
+    setMessages(newMessages);
+    setLoading(true);
+    try {
+      const history = newMessages.slice(1).map(m => ({ role: m.role, content: m.content }));
+      const reply = await mentorChat(msg, history, language);
+      setMessages(m => [...m, { role: 'assistant', content: reply }]);
+    } catch {
+      setMessages(m => [...m, { role: 'assistant', content: '⚠️ Sorry, I could not respond. Please try again.' }]);
+    }
+    setLoading(false);
+  };
+
+  const suggestions = ['Explain Newton\'s laws simply', 'What is photosynthesis?', 'Tips for JEE preparation', 'How to solve integration?'];
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      {/* HEADER */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-ink-600/20 border border-ink-500/30 flex items-center justify-center">
-            <Bot size={18} />
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm">AI Mentor</p>
-            <p className="text-xs text-gray-400">
-              Exam-focused AI Tutor
-            </p>
-          </div>
-        </div>
+    <div style={{ fontFamily: "'Segoe UI', sans-serif" }}>
+      <style>{`
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
 
-        <button onClick={clearChat} className="text-xs text-gray-300">
-          <Trash2 size={13} /> Clear
-        </button>
+      <div style={{ marginBottom: '24px', animation: 'fadeUp 0.4s ease' }}>
+        <h2 style={{ margin: '0 0 4px', fontWeight: '800', fontSize: '28px', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>🤖 AI Mentor</h2>
+        <p style={{ margin: 0, color: '#64748b' }}>Your personal AI tutor — available 24/7</p>
       </div>
 
-      {/* CHAT */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
-        {messages.map((msg, i) => (
-          <Message key={i} msg={msg} />
-        ))}
+      <div style={{
+        background: 'white', borderRadius: '24px', boxShadow: '0 4px 30px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(124,58,237,0.1)', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', height: '650px',
+      }}>
+        {/* CHAT MESSAGES */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'linear-gradient(to bottom, #fafbff, #f8faff)' }}>
+          {messages.map((m, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', gap: '10px', alignItems: 'flex-end', animation: 'fadeUp 0.3s ease' }}>
+              {m.role === 'assistant' && (
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0, boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>🤖</div>
+              )}
+              <div style={{
+                maxWidth: '75%', padding: '14px 18px',
+                borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                background: m.role === 'user' ? 'linear-gradient(135deg, #7c3aed, #2563eb)' : 'white',
+                color: m.role === 'user' ? 'white' : '#1e293b',
+                boxShadow: m.role === 'user' ? '0 4px 15px rgba(124,58,237,0.3)' : '0 2px 12px rgba(0,0,0,0.08)',
+                fontSize: '15px', lineHeight: 1.6,
+                border: m.role === 'assistant' ? '1px solid #f1f5f9' : 'none',
+              }}>
+                {m.role === 'assistant' ? formatMessage(m.content) : m.content}
+              </div>
+              {m.role === 'user' && (
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #f093fb, #f5576c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '15px', flexShrink: 0, boxShadow: '0 4px 12px rgba(240,147,251,0.3)' }}>U</div>
+              )}
+            </div>
+          ))}
 
-        {loading && (
-          <div className="flex gap-3">
-            <Loader2 className="animate-spin text-gray-400" />
-            <span className="text-gray-400 text-sm">Thinking...</span>
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🤖</div>
+              <div style={{ background: 'white', padding: '16px 20px', borderRadius: '18px 18px 18px 4px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', animation: `bounce 1s ease ${i * 0.2}s infinite` }} />
+                  ))}
+                  <span style={{ marginLeft: '8px', color: '#94a3b8', fontSize: '13px' }}>AI is thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* QUICK SUGGESTIONS */}
+        {messages.length <= 1 && (
+          <div style={{ padding: '12px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '8px', flexWrap: 'wrap', background: '#fafbff' }}>
+            <span style={{ fontSize: '13px', color: '#94a3b8', alignSelf: 'center' }}>Try:</span>
+            {suggestions.map((s, i) => (
+              <button key={i} onClick={() => setInput(s)} style={{
+                padding: '6px 14px', borderRadius: '20px', border: '1px solid #e0e7ff',
+                background: 'white', color: '#7c3aed', cursor: 'pointer', fontSize: '13px', fontWeight: '500', fontFamily: 'inherit',
+                transition: 'all 0.2s',
+              }}
+                onMouseOver={e => { e.currentTarget.style.background = '#f0edff'; e.currentTarget.style.borderColor = '#7c3aed'; }}
+                onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e0e7ff'; }}
+              >{s}</button>
+            ))}
           </div>
         )}
 
-        <div ref={bottomRef} />
-      </div>
-
-      {/* SUGGESTIONS */}
-      {messages.length <= 2 && (
-        <div className="px-4 pb-3 flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => send(s)}
-              className="text-xs px-3 py-1 border rounded"
-            >
-              {s}
-            </button>
-          ))}
+        {/* INPUT BOX */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px', background: 'white' }}>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            placeholder="Type your question here and press Enter..."
+            style={{
+              flex: 1, padding: '14px 18px', borderRadius: '14px', fontSize: '15px', fontFamily: 'inherit',
+              border: '2px solid #e5e7eb', outline: 'none', transition: 'border-color 0.2s',
+              background: '#fafbff', color: '#1e293b',
+            }}
+            onFocus={e => e.target.style.borderColor = '#7c3aed'}
+            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+          />
+          <button onClick={handleSend} disabled={loading} style={{
+            background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #7c3aed, #2563eb)',
+            color: loading ? '#9ca3af' : 'white', border: 'none',
+            padding: '14px 24px', borderRadius: '14px', cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: '700', fontSize: '15px', fontFamily: 'inherit', transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+          }}
+            onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(124,58,237,0.4)'; } }}
+            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            Send ✈️
+          </button>
         </div>
-      )}
-
-      {/* INPUT */}
-      <div className="px-4 py-4 border-t flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
-          className="flex-1 border px-3 py-2 rounded"
-          placeholder="Ask anything..."
-        />
-
-        <button
-          onClick={() => send()}
-          disabled={loading}
-          className="px-4 bg-blue-500 text-white rounded"
-        >
-          {loading ? <Loader2 className="animate-spin" /> : <Send />}
-        </button>
       </div>
     </div>
   );

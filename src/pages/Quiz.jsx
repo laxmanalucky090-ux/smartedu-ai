@@ -1,314 +1,173 @@
-import { useState, useEffect } from "react";
-import {
-  HelpCircle, Loader2, CheckCircle2, XCircle, RotateCcw, Sparkles, TrendingUp,
-} from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { generateQuiz } from "../utils/gemini";
+import { useState } from 'react';
+import { generateQuiz } from '../utils/gemini';
 
-const DIFFICULTIES = ["easy", "medium", "hard"];
-const COUNTS = [5, 10, 15];
+export default function QuizPage({ language, progress, setProgress }) {
+  const [subject, setSubject] = useState('');
+  const [numQ, setNumQ] = useState(5);
+  const [difficulty, setDifficulty] = useState('medium');
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-export default function Quiz() {
-  const { examConfig, language, quizHistory, addQuizResult } = useAuth();
-
-  const subjectOptions = examConfig?.subjects
-    ? examConfig.subjects.split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
-
-  const weakTopics = examConfig?.weakTopics
-    ? examConfig.weakTopics.split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
-
-  const [subject, setSubject]       = useState(subjectOptions[0] || "");
-  const [customSubject, setCustomSubject] = useState("");
-  const [topic, setTopic]           = useState(weakTopics[0] || "");
-  const [difficulty, setDifficulty] = useState("medium");
-  const [numQuestions, setNumQuestions] = useState(5);
-
-  const [questions, setQuestions]   = useState(null);
-  const [answers, setAnswers]       = useState({});
-  const [submitted, setSubmitted]   = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
-
-  const effectiveSubject = subject === "__custom__" ? customSubject.trim() : subject;
-
-  // ── Adaptive difficulty: suggest based on past performance for this subject ──
-  useEffect(() => {
-    const past = quizHistory.filter((h) => h.subject === effectiveSubject);
-    if (past.length === 0) return;
-
-    const recent = past.slice(-3); // last 3 attempts
-    const avgPercent =
-      recent.reduce((acc, h) => acc + (h.score / h.total) * 100, 0) / recent.length;
-
-    if (avgPercent >= 80) setDifficulty("hard");
-    else if (avgPercent < 50) setDifficulty("easy");
-    else setDifficulty("medium");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveSubject]);
-
-  const pastForSubject = quizHistory.filter((h) => h.subject === effectiveSubject);
-  const lastResult = pastForSubject[pastForSubject.length - 1];
-
-  const startQuiz = async () => {
-    if (!effectiveSubject) {
-      setError("Please select or enter a subject.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    setSubmitted(false);
-    setAnswers({});
+  const handleGenerate = async () => {
+    if (!subject.trim()) return setError('Please enter a subject.');
+    setError(''); setLoading(true); setQuestions([]); setAnswers({}); setSubmitted(false);
     try {
-      const qs = await generateQuiz(
-        { subject: effectiveSubject, topic, difficulty, numQuestions },
-        language
-      );
+      const qs = await generateQuiz(subject, numQ, difficulty, language);
+      if (!qs || qs.length === 0) throw new Error('No questions returned');
       setQuestions(qs);
-    } catch (e) {
-      setError(e.message ?? "Failed to generate quiz. Please try again.");
-      setQuestions(null);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError('Failed to generate quiz. Please try again.'); }
+    setLoading(false);
   };
 
-  const selectAnswer = (qIndex, optIndex) => {
-    if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [qIndex]: optIndex }));
+  const handleSubmit = () => {
+    if (Object.keys(answers).length < questions.length) return setError('Please answer all questions before submitting.');
+    setError(''); setSubmitted(true);
+    const correct = questions.filter((q, i) => answers[i] === q.correctAnswer).length;
+    const score = Math.round((correct / questions.length) * 100);
+    setProgress(p => ({ ...p, quizzesCompleted: p.quizzesCompleted + 1, quizScores: [...p.quizScores, score] }));
   };
 
-  const score = questions
-    ? questions.reduce((acc, q, i) => acc + (answers[i] === q.correctIndex ? 1 : 0), 0)
-    : 0;
+  const correct = submitted ? questions.filter((q, i) => answers[i] === q.correctAnswer).length : 0;
+  const scorePercent = submitted ? Math.round(correct / questions.length * 100) : 0;
 
-  const submitQuiz = () => {
-    setSubmitted(true);
-    addQuizResult({
-      subject: effectiveSubject,
-      topic,
-      difficulty,
-      score,
-      total: questions.length,
-    });
-  };
-
-  const resetQuiz = () => {
-    setQuestions(null);
-    setAnswers({});
-    setSubmitted(false);
-    setError("");
-  };
+  const diffColors = { easy: { bg: '#dcfce7', color: '#15803d' }, medium: { bg: '#fef3c7', color: '#d97706' }, hard: { bg: '#fee2e2', color: '#dc2626' } };
 
   return (
-    <div className="flex-1 p-6 lg:p-8 animate-fade-up max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <HelpCircle size={22} className="text-violet-400" />
-        <h1 className="font-display font-bold text-2xl text-white">AI Quiz</h1>
+    <div>
+      <style>{`
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes celebrate { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+      `}</style>
+
+      <div style={{ marginBottom: '24px', animation: 'fadeUp 0.4s ease' }}>
+        <h2 style={{ margin: '0 0 4px', fontWeight: '800', fontSize: '28px', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>📝 Quiz Generator</h2>
+        <p style={{ margin: 0, color: '#64748b' }}>Test your knowledge with AI-generated questions</p>
       </div>
-      <p className="text-[var(--c-muted)] text-sm mb-8">
-        Test your knowledge with AI-generated multiple-choice questions, personalised to your weak topics.
-      </p>
 
-      {/* Setup form */}
-      {!questions && (
-        <div className="card space-y-5">
-          <div>
-            <label className="label">Subject</label>
-            {subjectOptions.length > 0 ? (
-              <select
-                className="input"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              >
-                {subjectOptions.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-                <option value="__custom__">Other (type below)</option>
-              </select>
-            ) : (
-              <p className="text-xs text-[var(--c-muted)] mb-2">
-                No exam configured — enter any subject below.
-              </p>
-            )}
-            {(subject === "__custom__" || subjectOptions.length === 0) && (
-              <input
-                className="input mt-2"
-                placeholder="e.g. Physics, History, Python Basics"
-                value={customSubject}
-                onChange={(e) => setCustomSubject(e.target.value)}
-              />
-            )}
+      <div style={{ background: 'white', borderRadius: '24px', padding: '28px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid rgba(124,58,237,0.08)', animation: 'fadeUp 0.5s ease 0.1s both' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div style={{ flex: 2, minWidth: '200px' }}>
+            <label style={{ display: 'block', fontWeight: '700', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>Subject *</label>
+            <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g. Physics, Mathematics, Biology"
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box', border: '2px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', background: '#fafbff', transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
           </div>
-
-          <div>
-            <label className="label">Specific topic</label>
-            <input
-              className="input"
-              placeholder="e.g. Thermodynamics, World War II, Loops"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
-            {weakTopics.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {weakTopics.map((wt) => (
-                  <button
-                    key={wt}
-                    type="button"
-                    onClick={() => setTopic(wt)}
-                    className={`badge text-[10px] cursor-pointer transition-all ${
-                      topic === wt
-                        ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
-                        : "border-surface-border text-[var(--c-muted)] hover:border-amber-500/40 hover:text-amber-300"
-                    }`}
-                  >
-                    ⚠ {wt}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div style={{ minWidth: '130px' }}>
+            <label style={{ display: 'block', fontWeight: '700', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>Questions</label>
+            <select value={numQ} onChange={e => setNumQ(Number(e.target.value))}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '15px', border: '2px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', background: '#fafbff', cursor: 'pointer' }}>
+              {[3, 5, 10, 15, 20].map(n => <option key={n} value={n}>{n} Questions</option>)}
+            </select>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Difficulty</label>
-              <select
-                className="input"
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-              >
-                {DIFFICULTIES.map((d) => (
-                  <option key={d} value={d}>{d[0].toUpperCase() + d.slice(1)}</option>
-                ))}
-              </select>
-              {lastResult && (
-                <p className="flex items-center gap-1 text-[10px] text-[var(--c-muted)] mt-1.5">
-                  <TrendingUp size={11} className="text-ink-400" />
-                  Suggested based on last score: {lastResult.score}/{lastResult.total}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="label">Number of questions</label>
-              <select
-                className="input"
-                value={numQuestions}
-                onChange={(e) => setNumQuestions(Number(e.target.value))}
-              >
-                {COUNTS.map((c) => (
-                  <option key={c} value={c}>{c} questions</option>
-                ))}
-              </select>
-            </div>
+          <div style={{ minWidth: '130px' }}>
+            <label style={{ display: 'block', fontWeight: '700', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>Difficulty</label>
+            <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '15px', border: '2px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', background: '#fafbff', cursor: 'pointer' }}>
+              <option value="easy">🟢 Easy</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="hard">🔴 Hard</option>
+            </select>
           </div>
-
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-
-          <button onClick={startQuiz} disabled={loading} className="btn-primary py-3">
-            {loading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" /> Generating quiz…
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} /> Generate Quiz
-              </>
-            )}
+          <button onClick={handleGenerate} disabled={loading} style={{
+            background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #7c3aed, #2563eb)',
+            color: loading ? '#9ca3af' : 'white', border: 'none', padding: '12px 28px',
+            borderRadius: '12px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '15px', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', transition: 'all 0.2s',
+          }}
+            onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(124,58,237,0.4)'; } }}
+            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            {loading ? <><div style={{ width: '16px', height: '16px', border: '2px solid #9ca3af', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Generating...</> : '🚀 Generate Quiz'}
           </button>
         </div>
-      )}
+        {error && <div style={{ marginTop: '16px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '12px', padding: '12px 16px', color: '#dc2626', fontSize: '14px' }}>⚠️ {error}</div>}
+      </div>
 
-      {/* Loading state */}
-      {loading && (
-        <div className="card flex flex-col items-center justify-center py-16 gap-4 mt-6">
-          <Loader2 size={28} className="text-violet-400 animate-spin" />
-          <p className="text-sm text-[var(--c-muted)]">Creating your questions…</p>
-        </div>
-      )}
-
-      {/* Quiz */}
-      {questions && !loading && (
-        <div className="space-y-5">
-          {/* Score banner (after submit) */}
-          {submitted && (
-            <div className="card bg-violet-500/10 border-violet-500/30 flex items-center justify-between">
-              <div>
-                <p className="font-display font-bold text-xl text-white">
-                  Score: {score} / {questions.length}
-                </p>
-                <p className="text-sm text-[var(--c-muted)]">
-                  {score === questions.length
-                    ? "Perfect score! 🎉"
-                    : score >= questions.length / 2
-                    ? "Good job — review the explanations below."
-                    : "Keep practicing — check explanations to improve."}
-                </p>
-              </div>
-              <button onClick={resetQuiz} className="btn-ghost">
-                <RotateCcw size={15} /> New Quiz
-              </button>
+      {submitted && (
+        <div style={{
+          borderRadius: '24px', padding: '36px', marginBottom: '24px', textAlign: 'center',
+          background: scorePercent >= 70 ? 'linear-gradient(135deg, #dcfce7, #bbf7d0)' : 'linear-gradient(135deg, #fee2e2, #fecaca)',
+          border: `2px solid ${scorePercent >= 70 ? '#86efac' : '#fca5a5'}`,
+          animation: 'celebrate 0.6s ease',
+        }}>
+          <div style={{ fontSize: '56px', marginBottom: '12px' }}>{scorePercent >= 70 ? '🎉' : '📖'}</div>
+          <h2 style={{ margin: '0 0 8px', fontSize: '32px', fontWeight: '800', color: scorePercent >= 70 ? '#15803d' : '#dc2626' }}>
+            {scorePercent >= 70 ? 'Excellent Work!' : 'Keep Practicing!'}
+          </h2>
+          <p style={{ margin: '0 0 16px', fontSize: '20px', color: '#374151' }}>
+            You scored <strong>{correct}/{questions.length}</strong> questions correctly
+          </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', background: 'white', padding: '16px 32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+            <span style={{ fontSize: '40px', fontWeight: '800', color: scorePercent >= 70 ? '#15803d' : '#dc2626' }}>{scorePercent}%</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: '700', color: '#374151' }}>Score</div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>{scorePercent >= 90 ? 'Outstanding!' : scorePercent >= 70 ? 'Good job!' : 'Room to improve'}</div>
             </div>
-          )}
-
-          {questions.map((q, qi) => {
-            const selected  = answers[qi];
-            const isCorrect = selected === q.correctIndex;
-
-            return (
-              <div key={qi} className="card">
-                <p className="font-display font-semibold text-white text-sm mb-4">
-                  {qi + 1}. {q.question}
-                </p>
-                <div className="space-y-2">
-                  {q.options.map((opt, oi) => {
-                    let style = "border-surface-border hover:border-ink-500/40 text-[var(--c-muted)]";
-                    if (submitted) {
-                      if (oi === q.correctIndex) {
-                        style = "border-emerald-500/50 bg-emerald-500/10 text-emerald-300";
-                      } else if (oi === selected) {
-                        style = "border-red-500/50 bg-red-500/10 text-red-300";
-                      }
-                    } else if (selected === oi) {
-                      style = "border-ink-500/50 bg-ink-600/10 text-white";
-                    }
-
-                    return (
-                      <button
-                        key={oi}
-                        onClick={() => selectAnswer(qi, oi)}
-                        disabled={submitted}
-                        className={`w-full text-left text-sm px-4 py-2.5 rounded-xl border transition-all duration-150 ${style}`}
-                      >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {submitted && (
-                  <div className={`mt-3 flex items-start gap-2 text-xs ${isCorrect ? "text-emerald-400" : "text-amber-400"}`}>
-                    {isCorrect
-                      ? <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
-                      : <XCircle size={14} className="shrink-0 mt-0.5" />}
-                    <span>{q.explanation}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {!submitted && (
-            <button
-              onClick={submitQuiz}
-              disabled={Object.keys(answers).length < questions.length}
-              className="btn-primary py-3 w-full justify-center"
-            >
-              Submit Quiz
-            </button>
-          )}
+          </div>
         </div>
+      )}
+
+      {questions.map((q, i) => {
+        const answered = answers[i];
+        const isCorrect = answered === q.correctAnswer;
+        return (
+          <div key={i} style={{
+            background: 'white', borderRadius: '20px', padding: '24px', marginBottom: '16px',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.06)',
+            borderLeft: submitted ? `5px solid ${isCorrect ? '#16a34a' : '#dc2626'}` : '5px solid #7c3aed',
+            animation: `fadeUp 0.4s ease ${i * 0.05}s both`,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '16px', flex: 1, lineHeight: 1.5 }}>
+                <span style={{ color: '#7c3aed', marginRight: '8px' }}>Q{i + 1}.</span>{q.question}
+              </p>
+              {submitted && <span style={{ fontSize: '24px', marginLeft: '12px' }}>{isCorrect ? '✅' : '❌'}</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {q.options.map((opt, j) => {
+                let bg = '#f8fafc'; let border = '#e2e8f0'; let color = '#374151';
+                if (submitted) {
+                  if (opt === q.correctAnswer) { bg = '#dcfce7'; border = '#86efac'; color = '#15803d'; }
+                  else if (opt === answered && !isCorrect) { bg = '#fee2e2'; border = '#fca5a5'; color = '#dc2626'; }
+                } else if (answered === opt) { bg = '#ede9fe'; border = '#7c3aed'; color = '#6d28d9'; }
+                return (
+                  <button key={j} disabled={submitted} onClick={() => setAnswers(a => ({ ...a, [i]: opt }))}
+                    style={{ background: bg, border: `2px solid ${border}`, borderRadius: '12px', padding: '12px 16px', textAlign: 'left', cursor: submitted ? 'default' : 'pointer', fontSize: '14px', color, fontWeight: answered === opt ? '700' : '400', fontFamily: 'inherit', transition: 'all 0.15s', lineHeight: 1.4 }}
+                    onMouseOver={e => { if (!submitted) e.currentTarget.style.borderColor = '#7c3aed'; }}
+                    onMouseOut={e => { if (!submitted && answered !== opt) e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  >
+                    <span style={{ color: '#9ca3af', marginRight: '8px' }}>{['A', 'B', 'C', 'D'][j]}.</span>
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            {submitted && (
+              <div style={{ marginTop: '16px', background: '#f0f4ff', borderRadius: '12px', padding: '14px 18px', borderLeft: '4px solid #2563eb' }}>
+                <span style={{ fontWeight: '700', color: '#1e40af' }}>💡 Explanation: </span>
+                <span style={{ color: '#374151', fontSize: '14px' }}>{q.explanation}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {questions.length > 0 && !submitted && (
+        <button onClick={handleSubmit} style={{
+          background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none',
+          padding: '16px', borderRadius: '16px', fontSize: '17px', fontWeight: '800',
+          cursor: 'pointer', width: '100%', fontFamily: 'inherit', transition: 'all 0.2s',
+          boxShadow: '0 4px 15px rgba(22,163,74,0.3)',
+        }}
+          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(22,163,74,0.4)'; }}
+          onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(22,163,74,0.3)'; }}
+        >
+          ✅ Submit Quiz ({Object.keys(answers).length}/{questions.length} answered)
+        </button>
       )}
     </div>
   );

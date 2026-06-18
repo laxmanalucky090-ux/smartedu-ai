@@ -1,148 +1,147 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Zap, ArrowRight, BookOpen, Brain, TrendingUp } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useState, useEffect } from 'react';
 
-const FEATURES = [
-  { icon: Brain,      label: "AI Study Plans",     desc: "Personalised weekly schedules" },
-  { icon: BookOpen,   label: "AI Mentor",           desc: "Ask anything, get instant help" },
-  { icon: TrendingUp, label: "Progress Tracking",   desc: "Visual insights on your growth" },
-];
+export default function LoginPage({ onLogin }) {
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
-export default function Login() {
-  const { login } = useAuth();
-  const navigate   = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "" });
-  const [errors, setErrors]   = useState({});
-  const [loading, setLoading] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  const validate = () => {
-    const e = {};
-    if (!form.name.trim())  e.name  = "Name is required";
-    if (!form.email.trim()) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email";
-    return e;
-  };
-
-  const handleSubmit = async (ev) => {
-    ev.preventDefault();
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800)); // simulate auth
-    login(form.name.trim(), form.email.trim());
-    navigate("/dashboard");
+  const handleLogin = () => {
+    if (!name.trim()) return setError('Please enter your name');
+    if (!password.trim()) return setError('Please enter a password');
+    onLogin({ name: name.trim() });
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--c-bg)] overflow-hidden">
-      {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[46%] bg-surface-card border-r border-surface-border px-12 py-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-ink-600 flex items-center justify-center shadow-lg shadow-ink-600/40">
-            <Zap size={18} className="text-white" />
+    <div style={{
+      minHeight: '100vh', display: 'flex', fontFamily: "'Segoe UI', sans-serif", overflow: 'hidden',
+    }}>
+      {/* LEFT PANEL */}
+      <div style={{
+        flex: 1, background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start',
+        padding: '60px', position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Animated background circles */}
+        {[...Array(5)].map((_, i) => (
+          <div key={i} style={{
+            position: 'absolute',
+            width: `${120 + i * 80}px`, height: `${120 + i * 80}px`,
+            borderRadius: '50%',
+            border: '1px solid rgba(255,255,255,0.05)',
+            top: `${10 + i * 12}%`, left: `${-5 + i * 8}%`,
+            animation: `pulse ${3 + i}s ease-in-out infinite alternate`,
+          }} />
+        ))}
+        <style>{`
+          @keyframes pulse { from { transform: scale(1); opacity: 0.3; } to { transform: scale(1.05); opacity: 0.1; } }
+          @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        `}</style>
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '500px', opacity: mounted ? 1 : 0, transition: 'opacity 0.8s ease' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px', animation: 'float 3s ease-in-out infinite' }}>🎓</div>
+          <div style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '700', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '16px' }}>
+            AI-POWERED LEARNING
           </div>
-          <span className="font-display font-bold text-lg text-white">SmartEdu AI</span>
-        </div>
-
-        <div>
-          <p className="text-xs font-mono tracking-[0.2em] text-ink-400 uppercase mb-4">
-            Study smarter, not harder
-          </p>
-          <h1 className="font-display font-bold text-5xl text-white leading-[1.1] mb-6">
-            Your AI-powered<br />
-            <span className="gradient-text">study companion</span>
+          <h1 style={{ color: 'white', fontSize: '52px', fontWeight: '800', lineHeight: 1.1, marginBottom: '24px', margin: '0 0 24px' }}>
+            Learn Smarter,<br />
+            <span style={{ background: 'linear-gradient(90deg, #a78bfa, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Not Harder.
+            </span>
           </h1>
-          <p className="text-[var(--c-muted)] text-base max-w-sm leading-relaxed">
-            Get personalised study plans, an always-available AI mentor, and detailed
-            progress insights — all in one place.
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '18px', lineHeight: 1.7, marginBottom: '48px' }}>
+            Your personalized AI mentor that adapts to your learning style, generates custom study plans, and helps you ace every exam.
           </p>
 
-          <div className="mt-10 space-y-4">
-            {FEATURES.map(({ icon: Icon, label, desc }) => (
-              <div key={label} className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-ink-600/15 border border-ink-500/20 flex items-center justify-center shrink-0">
-                  <Icon size={18} className="text-ink-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-display font-semibold text-white">{label}</p>
-                  <p className="text-xs text-[var(--c-muted)]">{desc}</p>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {[
+              { icon: '📚', text: 'Personalized Study Plans for JEE, NEET & more' },
+              { icon: '🧠', text: 'AI Mentor available 24/7 to solve your doubts' },
+              { icon: '📝', text: 'Smart quizzes that adapt to your weak areas' },
+              { icon: '📊', text: 'Real-time progress tracking & analytics' },
+            ].map((f, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '14px',
+                animation: `fadeUp 0.6s ease ${0.2 + i * 0.1}s both`,
+              }}>
+                <div style={{ fontSize: '24px', width: '44px', height: '44px', background: 'rgba(167,139,250,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{f.icon}</div>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '15px' }}>{f.text}</span>
               </div>
             ))}
           </div>
         </div>
-
-        <p className="text-[10px] text-[var(--c-muted)]">
-          © 2025 SmartEdu AI. Built with React + Gemini.
-        </p>
       </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md animate-fade-up">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-lg bg-ink-600 flex items-center justify-center">
-              <Zap size={16} className="text-white" />
-            </div>
-            <span className="font-display font-bold text-white">SmartEdu AI</span>
+      {/* RIGHT PANEL */}
+      <div style={{
+        width: '480px', background: '#ffffff', display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', padding: '60px 48px', boxShadow: '-20px 0 60px rgba(0,0,0,0.15)',
+      }}>
+        <div style={{ marginBottom: '40px' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#0f0c29', margin: '0 0 8px' }}>Welcome back 👋</h2>
+          <p style={{ color: '#64748b', fontSize: '16px', margin: 0 }}>Sign in to continue your learning journey</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>Your Name</label>
+            <input
+              value={name} onChange={e => setName(e.target.value)}
+              placeholder="e.g. Laxman"
+              style={{
+                width: '100%', padding: '14px 16px', borderRadius: '12px', fontSize: '16px', boxSizing: 'border-box',
+                border: '2px solid #e5e7eb', outline: 'none', transition: 'border-color 0.2s',
+                fontFamily: 'inherit',
+              }}
+              onFocus={e => e.target.style.borderColor = '#7c3aed'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+            />
           </div>
 
-          <h2 className="font-display font-bold text-3xl text-white mb-1">Get started</h2>
-          <p className="text-[var(--c-muted)] text-sm mb-8">
-            Enter your details to begin your learning journey.
-          </p>
+          <div>
+            <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>Password</label>
+            <input
+              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Enter any password"
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              style={{
+                width: '100%', padding: '14px 16px', borderRadius: '12px', fontSize: '16px', boxSizing: 'border-box',
+                border: '2px solid #e5e7eb', outline: 'none', transition: 'border-color 0.2s',
+                fontFamily: 'inherit',
+              }}
+              onFocus={e => e.target.style.borderColor = '#7c3aed'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+            />
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="label">Your name</label>
-              <input
-                className="input"
-                placeholder="e.g. Arjun Kumar"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-              {errors.name && (
-                <p className="text-red-400 text-xs mt-1">{errors.name}</p>
-              )}
+          {error && (
+            <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '10px', padding: '12px 16px', color: '#dc2626', fontSize: '14px' }}>
+              ⚠️ {error}
             </div>
+          )}
 
-            <div>
-              <label className="label">Email address</label>
-              <input
-                className="input"
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-              {errors.email && (
-                <p className="text-red-400 text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
+          <button onClick={handleLogin} style={{
+            background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: 'white', border: 'none',
+            padding: '16px', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: 'pointer',
+            transition: 'transform 0.2s, box-shadow 0.2s', letterSpacing: '0.5px',
+          }}
+            onMouseOver={e => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 25px rgba(124,58,237,0.4)'; }}
+            onMouseOut={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = 'none'; }}
+          >
+            Start Learning →
+          </button>
+        </div>
 
-            <button
-              type="submit"
-              className="btn-primary w-full justify-center py-3 mt-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in…
-                </>
-              ) : (
-                <>
-                  Start Learning <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
+        <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px', marginTop: '24px' }}>
+          Enter any name and password to continue
+        </p>
 
-          <p className="text-xs text-[var(--c-muted)] text-center mt-6">
-            No password needed — your progress is saved locally.
-          </p>
+        <div style={{ marginTop: '48px', padding: '20px', background: '#f8faff', borderRadius: '12px', border: '1px solid #e0e7ff' }}>
+          <p style={{ margin: '0 0 8px', fontWeight: '700', color: '#4338ca', fontSize: '14px' }}>🚀 Trusted by students</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Join thousands of students preparing for JEE, NEET, GATE and more with AI-powered guidance.</p>
         </div>
       </div>
     </div>

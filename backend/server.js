@@ -1,57 +1,129 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import axios from "axios";
+import mongoose from 'mongoose';
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import Groq from 'groq-sdk';
 
-dotenv.config();
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Error:', err));
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const API_KEY = process.env.GEMINI_API_KEY;
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const GEMINI_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+async function callAI(prompt) {
+  const response = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 4000,
+    temperature: 0.7,
+  });
+  return response.choices[0].message.content;
+}
 
-// HOME ROUTE (FIX for Cannot GET /)
-app.get("/", (req, res) => {
-  res.send("SmartEdu AI Backend Running ✅");
-});
+function extractJSON(text) {
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/```json/gi, '').replace(/```/g, '').trim();
+  const firstBrace = cleaned.search(/[\{\[]/);
+  const lastBrace = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+  return JSON.parse(cleaned);
+}
 
-// CHAT ROUTE
-app.post("/api/chat", async (req, res) => {
+app.get('/', (req, res) => res.send('SmartEdu AI Backend Running ✅'));
+
+app.post('/api/study-plan', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { examName, examDate, expectedMarks, subjects, weakTopics, dailyHours, language } = req.body;
+    const prompt = `You are an expert educational planner for competitive exams in India.
+Create a detailed personalized study plan for:
+- Exam: ${examName}
+- Exam Date: ${examDate || 'Not specified'}
+- Target Score: ${expectedMarks || 'Maximum possible'}
+- Subjects: ${subjects}
+- Weak Topics: ${weakTopics || 'None'}
+- Daily Study Hours: ${dailyHours}
+- Language: ${language || 'English'}
 
-    const prompt = `
-You are SmartEdu AI Mentor 🎓
-Help students in simple way.
+Return ONLY valid JSON, no markdown, no extra text:
+{"title":"string","description":"string","totalDuration":"string","weeks":[{"week":1,"title":"string","topics":["string"],"goals":["string"]}]}`;
 
-Question:
-${message}
-    `;
-
-    const response = await axios.post(GEMINI_URL, {
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
-    });
-
-    const reply =
-      response.data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response";
-
-    res.json({ reply });
-
+    const text = await callAI(prompt);
+    const data = extractJSON(text);
+    res.json(data);
   } catch (err) {
-    console.log(err.response?.data || err.message);
-    res.status(500).json({ reply: "AI server error" });
+    console.error('study-plan error:', err.message);
+    res.status(500).json({ error: 'Failed to generate study plan', detail: err.message });
   }
 });
 
-app.listen(5000, () => {
-  console.log("Backend running on http://localhost:5000");
+app.post('/api/resources', async (req, res) => {
+  try {
+    const { subjects, language } = req.body;
+    const prompt = `Suggest learning resources for these subjects: ${subjects}
+Language: ${language || 'English'}
+Return ONLY valid JSON, no markdown:
+{"resources":[{"title":"string","type":"video|article|book|course","subject":"string","description":"string"}]}`;
+
+    const text = await callAI(prompt);
+    const data = extractJSON(text);
+    res.json(data);
+  } catch (err) {
+    console.error('resources error:', err.message);
+    res.status(500).json({ error: 'Failed to generate resources', detail: err.message });
+  }
 });
+
+app.post('/api/quiz', async (req, res) => {
+  try {
+    const { topic, numQuestions, difficulty, language } = req.body;
+    const prompt = `Create exactly ${numQuestions || 5} multiple choice questions about: ${topic}
+Difficulty: ${difficulty || 'medium'}
+Language: ${language || 'English'}
+IMPORTANT: Generate EXACTLY ${numQuestions || 5} questions.
+Return ONLY valid JSON, no markdown:
+{"questions":[{"question":"string","options":["string","string","string","string"],"correctAnswer":"string","explanation":"string"}]}`;
+
+    const text = await callAI(prompt);
+    const data = extractJSON(text);
+    res.json(data);
+  } catch (err) {
+    console.error('quiz error:', err.message);
+    res.status(500).json({ error: 'Failed to generate quiz', detail: err.message });
+  }
+});
+
+app.post('/api/mentor', async (req, res) => {
+  try {
+    const { message, history, language } = req.body;
+    const messages = [
+      { role: 'system', content: `You are a friendly AI mentor helping a student. Respond in ${language || 'English'}. Be clear and educational. Plain text only, no markdown.` },
+    ];
+    if (Array.isArray(history)) {
+      history.forEach(h => messages.push({
+        role: h.role === 'user' ? 'user' : 'assistant',
+        content: h.content
+      }));
+    }
+    messages.push({ role: 'user', content: message });
+
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: 1000,
+      temperature: 0.7,
+    });
+    res.json({ reply: response.choices[0].message.content.trim() });
+  } catch (err) {
+    console.error('mentor error:', err.message);
+    res.status(500).json({ error: 'AI server error', detail: err.message });
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
