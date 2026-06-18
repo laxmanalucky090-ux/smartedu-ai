@@ -12,14 +12,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Connect MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Auth middleware
 const auth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -52,8 +50,6 @@ function extractJSON(text) {
 }
 
 app.get('/', (req, res) => res.send('SmartEdu AI Backend Running ✅'));
-
-// ===== AUTH ROUTES =====
 
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -96,8 +92,6 @@ app.get('/api/history', auth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// ===== AI ROUTES =====
 
 app.post('/api/study-plan', auth, async (req, res) => {
   try {
