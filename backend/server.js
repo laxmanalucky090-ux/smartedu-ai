@@ -1,18 +1,36 @@
-import mongoose from 'mongoose';
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import Groq from 'groq-sdk';
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB Error:', err));
+import User from './models/User.js';
+import StudyPlan from './models/StudyPlan.js';
+import QuizResult from './models/QuizResult.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Connect MongoDB
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Error:', err));
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Auth middleware
+const auth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
 
 async function callAI(prompt) {
   const response = await groq.chat.completions.create({
@@ -29,17 +47,61 @@ function extractJSON(text) {
   cleaned = cleaned.replace(/```json/gi, '').replace(/```/g, '').trim();
   const firstBrace = cleaned.search(/[\{\[]/);
   const lastBrace = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
-  if (firstBrace !== -1 && lastBrace !== -1) {
-    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
-  }
+  if (firstBrace !== -1 && lastBrace !== -1) cleaned = cleaned.slice(firstBrace, lastBrace + 1);
   return JSON.parse(cleaned);
 }
 
 app.get('/', (req, res) => res.send('SmartEdu AI Backend Running ✅'));
 
-app.post('/api/study-plan', async (req, res) => {
+// ===== AUTH ROUTES =====
+
+app.post('/api/auth/register', async (req, res) => {
   try {
-    const { examName, examDate, expectedMarks, subjects, weakTopics, dailyHours, language } = req.body;
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'All fields required' });
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ error: 'Email already registered. Please login.' });
+    const user = await User.create({ name, email, password });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (err) {
+    console.error('register error:', err.message);
+    res.status(500).json({ error: 'Registration failed. Try again.' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'All fields required' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'Email not found. Please register.' });
+    const match = await user.comparePassword(password);
+    if (!match) return res.status(400).json({ error: 'Wrong password. Try again.' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (err) {
+    console.error('login error:', err.message);
+    res.status(500).json({ error: 'Login failed. Try again.' });
+  }
+});
+
+app.get('/api/history', auth, async (req, res) => {
+  try {
+    const plans = await StudyPlan.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(5);
+    const quizzes = await QuizResult.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(10);
+    res.json({ plans, quizzes });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== AI ROUTES =====
+
+app.post('/api/study-plan', auth, async (req, res) => {
+  try {
+    const { examName, examDate, expectedMarks, subjects, weakTopics, dailyHours, language, level } = req.body;
     const prompt = `You are an expert educational planner for competitive exams in India.
 Create a detailed personalized study plan for:
 - Exam: ${examName}
@@ -48,13 +110,17 @@ Create a detailed personalized study plan for:
 - Subjects: ${subjects}
 - Weak Topics: ${weakTopics || 'None'}
 - Daily Study Hours: ${dailyHours}
+- Current Level: ${level || 'beginner'}
 - Language: ${language || 'English'}
-
-Return ONLY valid JSON, no markdown, no extra text:
+Return ONLY valid JSON, no markdown:
 {"title":"string","description":"string","totalDuration":"string","weeks":[{"week":1,"title":"string","topics":["string"],"goals":["string"]}]}`;
-
     const text = await callAI(prompt);
     const data = extractJSON(text);
+    await StudyPlan.create({
+      userId: req.userId, examName,
+      subjects: subjects.split(',').map(s => s.trim()),
+      level, dailyHours, planData: data,
+    });
     res.json(data);
   } catch (err) {
     console.error('study-plan error:', err.message);
@@ -62,24 +128,22 @@ Return ONLY valid JSON, no markdown, no extra text:
   }
 });
 
-app.post('/api/resources', async (req, res) => {
+app.post('/api/resources', auth, async (req, res) => {
   try {
     const { subjects, language } = req.body;
     const prompt = `Suggest learning resources for these subjects: ${subjects}
 Language: ${language || 'English'}
 Return ONLY valid JSON, no markdown:
 {"resources":[{"title":"string","type":"video|article|book|course","subject":"string","description":"string"}]}`;
-
     const text = await callAI(prompt);
     const data = extractJSON(text);
     res.json(data);
   } catch (err) {
-    console.error('resources error:', err.message);
     res.status(500).json({ error: 'Failed to generate resources', detail: err.message });
   }
 });
 
-app.post('/api/quiz', async (req, res) => {
+app.post('/api/quiz', auth, async (req, res) => {
   try {
     const { topic, numQuestions, difficulty, language } = req.body;
     const prompt = `Create exactly ${numQuestions || 5} multiple choice questions about: ${topic}
@@ -88,21 +152,29 @@ Language: ${language || 'English'}
 IMPORTANT: Generate EXACTLY ${numQuestions || 5} questions.
 Return ONLY valid JSON, no markdown:
 {"questions":[{"question":"string","options":["string","string","string","string"],"correctAnswer":"string","explanation":"string"}]}`;
-
     const text = await callAI(prompt);
     const data = extractJSON(text);
     res.json(data);
   } catch (err) {
-    console.error('quiz error:', err.message);
     res.status(500).json({ error: 'Failed to generate quiz', detail: err.message });
   }
 });
 
-app.post('/api/mentor', async (req, res) => {
+app.post('/api/quiz/result', auth, async (req, res) => {
+  try {
+    const { subject, score, totalQuestions, difficulty } = req.body;
+    await QuizResult.create({ userId: req.userId, subject, score, totalQuestions, difficulty });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/mentor', auth, async (req, res) => {
   try {
     const { message, history, language } = req.body;
     const messages = [
-      { role: 'system', content: `You are a friendly AI mentor helping a student. Respond in ${language || 'English'}. Be clear and educational. Plain text only, no markdown.` },
+      { role: 'system', content: `You are a friendly AI mentor helping a student. Respond in ${language || 'English'}. Be clear, use numbered points or bullet points. Plain text only.` },
     ];
     if (Array.isArray(history)) {
       history.forEach(h => messages.push({
@@ -111,7 +183,6 @@ app.post('/api/mentor', async (req, res) => {
       }));
     }
     messages.push({ role: 'user', content: message });
-
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages,
@@ -120,7 +191,6 @@ app.post('/api/mentor', async (req, res) => {
     });
     res.json({ reply: response.choices[0].message.content.trim() });
   } catch (err) {
-    console.error('mentor error:', err.message);
     res.status(500).json({ error: 'AI server error', detail: err.message });
   }
 });
