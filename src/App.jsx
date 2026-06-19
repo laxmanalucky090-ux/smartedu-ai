@@ -1,22 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LoginPage from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import StudyPlannerPage from './pages/StudyPlan';
 import QuizPage from './pages/Quiz';
 import AIMentorPage from './pages/AIMentor';
 import ProgressPage from './pages/ProgressTracker';
-import { LANGUAGES } from './utils/gemini';
+import { LANGUAGES, getUserHistory } from './utils/gemini';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [page, setPage] = useState('dashboard');
   const [language, setLanguage] = useState('English');
+  const [mentorMessages, setMentorMessages] = useState([
+    { role: 'assistant', content: 'Hello! I am your AI Mentor 🎓\n\nAsk me anything about your studies — concepts, problems, exam tips, anything!\n\nI am here to help you 24/7.' }
+  ]);
   const [progress, setProgress] = useState({
     studyPlanGenerated: false,
     quizzesCompleted: 0,
     quizScores: [],
     tasksCompleted: [],
   });
+
+  // Load history from backend after login
+  useEffect(() => {
+    if (!user) return;
+    getUserHistory().then(data => {
+      if (data.plans && data.plans.length > 0) {
+        setProgress(p => ({ ...p, studyPlanGenerated: true }));
+      }
+      if (data.quizzes && data.quizzes.length > 0) {
+        setProgress(p => ({
+          ...p,
+          quizzesCompleted: data.quizzes.length,
+          quizScores: data.quizzes.map(q => Math.round((q.score / q.totalQuestions) * 100)),
+        }));
+      }
+    }).catch(() => {});
+  }, [user]);
 
   if (!user) return <LoginPage onLogin={setUser} />;
 
@@ -47,13 +67,11 @@ export default function App() {
         boxShadow: '0 4px 24px rgba(124,58,237,0.06)',
         animation: 'slideDown 0.4s ease',
       }}>
-        {/* LOGO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎓</div>
           <span style={{ fontWeight: '800', fontSize: '20px', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SmartEdu AI</span>
         </div>
 
-        {/* NAV */}
         <div style={{ display: 'flex', gap: '4px', background: '#f8faff', padding: '5px', borderRadius: '14px', border: '1px solid #e0e7ff' }}>
           {navItems.map(item => (
             <button key={item.id} onClick={() => setPage(item.id)} style={{
@@ -69,7 +87,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* RIGHT */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <select value={language} onChange={e => setLanguage(e.target.value)} style={{
             padding: '8px 12px', borderRadius: '10px', border: '1px solid #e0e7ff',
@@ -85,7 +102,7 @@ export default function App() {
             <span style={{ fontWeight: '600', color: '#4c1d95', fontSize: '14px' }}>{user.name}</span>
           </div>
 
-          <button onClick={() => setUser(null)} style={{
+          <button onClick={() => { setUser(null); setMentorMessages([{ role: 'assistant', content: 'Hello! I am your AI Mentor 🎓\n\nAsk me anything about your studies — concepts, problems, exam tips, anything!\n\nI am here to help you 24/7.' }]); }} style={{
             padding: '8px 16px', borderRadius: '10px', border: '1px solid #fecdd3',
             background: '#fff1f2', color: '#e11d48', cursor: 'pointer', fontSize: '14px',
             fontWeight: '600', fontFamily: 'inherit', transition: 'all 0.2s',
@@ -102,7 +119,7 @@ export default function App() {
         {page === 'dashboard' && <Dashboard setPage={setPage} user={user} progress={progress} />}
         {page === 'study' && <StudyPlannerPage language={language} progress={progress} setProgress={setProgress} />}
         {page === 'quiz' && <QuizPage language={language} progress={progress} setProgress={setProgress} />}
-        {page === 'mentor' && <AIMentorPage language={language} />}
+        {page === 'mentor' && <AIMentorPage language={language} messages={mentorMessages} setMessages={setMentorMessages} />}
         {page === 'progress' && <ProgressPage progress={progress} />}
       </div>
     </div>

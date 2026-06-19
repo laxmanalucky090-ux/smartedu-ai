@@ -1,10 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { mentorChat } from '../utils/gemini';
 
-export default function AIMentorPage({ language }) {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hello! I am your AI Mentor 🎓\n\nAsk me anything about your studies — concepts, problems, exam tips, anything!\n\nI am here to help you 24/7.' }
-  ]);
+export default function AIMentorPage({ language, messages, setMessages }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -54,14 +51,13 @@ export default function AIMentorPage({ language }) {
     setLoading(false);
   };
 
-  const suggestions = ['Explain Newton\'s laws simply', 'What is photosynthesis?', 'Tips for JEE preparation', 'How to solve integration?'];
+  const suggestions = ["Explain Newton's laws simply", 'What is photosynthesis?', 'Tips for JEE preparation', 'How to solve integration?'];
 
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif" }}>
       <style>{`
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ marginBottom: '24px', animation: 'fadeUp 0.4s ease' }}>
@@ -74,7 +70,6 @@ export default function AIMentorPage({ language }) {
         border: '1px solid rgba(124,58,237,0.1)', overflow: 'hidden',
         display: 'flex', flexDirection: 'column', height: '650px',
       }}>
-        {/* CHAT MESSAGES */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'linear-gradient(to bottom, #fafbff, #f8faff)' }}>
           {messages.map((m, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', gap: '10px', alignItems: 'flex-end', animation: 'fadeUp 0.3s ease' }}>
@@ -93,7 +88,7 @@ export default function AIMentorPage({ language }) {
                 {m.role === 'assistant' ? formatMessage(m.content) : m.content}
               </div>
               {m.role === 'user' && (
-                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #f093fb, #f5576c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '15px', flexShrink: 0, boxShadow: '0 4px 12px rgba(240,147,251,0.3)' }}>U</div>
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #f093fb, #f5576c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '15px', flexShrink: 0 }}>U</div>
               )}
             </div>
           ))}
@@ -114,7 +109,6 @@ export default function AIMentorPage({ language }) {
           <div ref={bottomRef} />
         </div>
 
-        {/* QUICK SUGGESTIONS */}
         {messages.length <= 1 && (
           <div style={{ padding: '12px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '8px', flexWrap: 'wrap', background: '#fafbff' }}>
             <span style={{ fontSize: '13px', color: '#94a3b8', alignSelf: 'center' }}>Try:</span>
@@ -122,16 +116,11 @@ export default function AIMentorPage({ language }) {
               <button key={i} onClick={() => setInput(s)} style={{
                 padding: '6px 14px', borderRadius: '20px', border: '1px solid #e0e7ff',
                 background: 'white', color: '#7c3aed', cursor: 'pointer', fontSize: '13px', fontWeight: '500', fontFamily: 'inherit',
-                transition: 'all 0.2s',
-              }}
-                onMouseOver={e => { e.currentTarget.style.background = '#f0edff'; e.currentTarget.style.borderColor = '#7c3aed'; }}
-                onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e0e7ff'; }}
-              >{s}</button>
+              }}>{s}</button>
             ))}
           </div>
         )}
 
-        {/* INPUT BOX */}
         <div style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px', background: 'white' }}>
           <input
             value={input}
@@ -140,8 +129,7 @@ export default function AIMentorPage({ language }) {
             placeholder="Type your question here and press Enter..."
             style={{
               flex: 1, padding: '14px 18px', borderRadius: '14px', fontSize: '15px', fontFamily: 'inherit',
-              border: '2px solid #e5e7eb', outline: 'none', transition: 'border-color 0.2s',
-              background: '#fafbff', color: '#1e293b',
+              border: '2px solid #e5e7eb', outline: 'none', background: '#fafbff', color: '#1e293b',
             }}
             onFocus={e => e.target.style.borderColor = '#7c3aed'}
             onBlur={e => e.target.style.borderColor = '#e5e7eb'}
@@ -150,12 +138,8 @@ export default function AIMentorPage({ language }) {
             background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #7c3aed, #2563eb)',
             color: loading ? '#9ca3af' : 'white', border: 'none',
             padding: '14px 24px', borderRadius: '14px', cursor: loading ? 'not-allowed' : 'pointer',
-            fontWeight: '700', fontSize: '15px', fontFamily: 'inherit', transition: 'all 0.2s',
-            whiteSpace: 'nowrap',
-          }}
-            onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(124,58,237,0.4)'; } }}
-            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-          >
+            fontWeight: '700', fontSize: '15px', fontFamily: 'inherit',
+          }}>
             Send ✈️
           </button>
         </div>

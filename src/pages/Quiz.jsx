@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { generateQuiz } from '../utils/gemini';
+import { generateQuiz, saveQuizResult } from '../utils/gemini';
 
 export default function QuizPage({ language, progress, setProgress }) {
   const [subject, setSubject] = useState('');
@@ -22,18 +22,26 @@ export default function QuizPage({ language, progress, setProgress }) {
     setLoading(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (Object.keys(answers).length < questions.length) return setError('Please answer all questions before submitting.');
     setError(''); setSubmitted(true);
     const correct = questions.filter((q, i) => answers[i] === q.correctAnswer).length;
     const score = Math.round((correct / questions.length) * 100);
     setProgress(p => ({ ...p, quizzesCompleted: p.quizzesCompleted + 1, quizScores: [...p.quizScores, score] }));
+    try {
+      await saveQuizResult(subject, correct, questions.length, difficulty);
+    } catch {}
+  };
+
+  const handleTryAgain = () => {
+    setQuestions([]);
+    setAnswers({});
+    setSubmitted(false);
+    setError('');
   };
 
   const correct = submitted ? questions.filter((q, i) => answers[i] === q.correctAnswer).length : 0;
   const scorePercent = submitted ? Math.round(correct / questions.length * 100) : 0;
-
-  const diffColors = { easy: { bg: '#dcfce7', color: '#15803d' }, medium: { bg: '#fef3c7', color: '#d97706' }, hard: { bg: '#fee2e2', color: '#dc2626' } };
 
   return (
     <div>
@@ -53,7 +61,7 @@ export default function QuizPage({ language, progress, setProgress }) {
           <div style={{ flex: 2, minWidth: '200px' }}>
             <label style={{ display: 'block', fontWeight: '700', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>Subject *</label>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g. Physics, Mathematics, Biology"
-              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box', border: '2px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', background: '#fafbff', transition: 'border-color 0.2s' }}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box', border: '2px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', background: '#fafbff' }}
               onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
           </div>
           <div style={{ minWidth: '130px' }}>
@@ -76,11 +84,8 @@ export default function QuizPage({ language, progress, setProgress }) {
             background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #7c3aed, #2563eb)',
             color: loading ? '#9ca3af' : 'white', border: 'none', padding: '12px 28px',
             borderRadius: '12px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '15px', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', transition: 'all 0.2s',
-          }}
-            onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(124,58,237,0.4)'; } }}
-            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-          >
+            display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap',
+          }}>
             {loading ? <><div style={{ width: '16px', height: '16px', border: '2px solid #9ca3af', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Generating...</> : '🚀 Generate Quiz'}
           </button>
         </div>
@@ -99,14 +104,30 @@ export default function QuizPage({ language, progress, setProgress }) {
             {scorePercent >= 70 ? 'Excellent Work!' : 'Keep Practicing!'}
           </h2>
           <p style={{ margin: '0 0 16px', fontSize: '20px', color: '#374151' }}>
-            You scored <strong>{correct}/{questions.length}</strong> questions correctly
+            You scored <strong>{correct}/{questions.length}</strong> correctly
           </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', background: 'white', padding: '16px 32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', background: 'white', padding: '16px 32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
             <span style={{ fontSize: '40px', fontWeight: '800', color: scorePercent >= 70 ? '#15803d' : '#dc2626' }}>{scorePercent}%</span>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: '700', color: '#374151' }}>Score</div>
               <div style={{ fontSize: '13px', color: '#64748b' }}>{scorePercent >= 90 ? 'Outstanding!' : scorePercent >= 70 ? 'Good job!' : 'Room to improve'}</div>
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={handleTryAgain} style={{
+              background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: 'white', border: 'none',
+              padding: '14px 32px', borderRadius: '14px', fontSize: '16px', fontWeight: '700',
+              cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(124,58,237,0.4)',
+            }}>
+              🔄 Try Again
+            </button>
+            <button onClick={() => { setSubject(''); handleTryAgain(); }} style={{
+              background: 'white', color: '#7c3aed', border: '2px solid #7c3aed',
+              padding: '14px 32px', borderRadius: '14px', fontSize: '16px', fontWeight: '700',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              📝 New Quiz
+            </button>
           </div>
         </div>
       )}
@@ -136,7 +157,7 @@ export default function QuizPage({ language, progress, setProgress }) {
                 } else if (answered === opt) { bg = '#ede9fe'; border = '#7c3aed'; color = '#6d28d9'; }
                 return (
                   <button key={j} disabled={submitted} onClick={() => setAnswers(a => ({ ...a, [i]: opt }))}
-                    style={{ background: bg, border: `2px solid ${border}`, borderRadius: '12px', padding: '12px 16px', textAlign: 'left', cursor: submitted ? 'default' : 'pointer', fontSize: '14px', color, fontWeight: answered === opt ? '700' : '400', fontFamily: 'inherit', transition: 'all 0.15s', lineHeight: 1.4 }}
+                    style={{ background: bg, border: `2px solid ${border}`, borderRadius: '12px', padding: '12px 16px', textAlign: 'left', cursor: submitted ? 'default' : 'pointer', fontSize: '14px', color, fontWeight: answered === opt ? '700' : '400', fontFamily: 'inherit', lineHeight: 1.4 }}
                     onMouseOver={e => { if (!submitted) e.currentTarget.style.borderColor = '#7c3aed'; }}
                     onMouseOut={e => { if (!submitted && answered !== opt) e.currentTarget.style.borderColor = '#e2e8f0'; }}
                   >
@@ -160,12 +181,9 @@ export default function QuizPage({ language, progress, setProgress }) {
         <button onClick={handleSubmit} style={{
           background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none',
           padding: '16px', borderRadius: '16px', fontSize: '17px', fontWeight: '800',
-          cursor: 'pointer', width: '100%', fontFamily: 'inherit', transition: 'all 0.2s',
+          cursor: 'pointer', width: '100%', fontFamily: 'inherit',
           boxShadow: '0 4px 15px rgba(22,163,74,0.3)',
-        }}
-          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(22,163,74,0.4)'; }}
-          onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(22,163,74,0.3)'; }}
-        >
+        }}>
           ✅ Submit Quiz ({Object.keys(answers).length}/{questions.length} answered)
         </button>
       )}
