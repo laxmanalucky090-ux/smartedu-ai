@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import Groq from 'groq-sdk';
 import User from './models/User.js';
 import StudyPlan from './models/StudyPlan.js';
@@ -58,7 +59,9 @@ app.post('/api/auth/register', async (req, res) => {
     if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ error: 'Email already registered. Please login.' });
-    const user = await User.create({ name, email, password });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const user = await User.create({ name, email, password: hashedPassword });
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
   } catch (err) {
@@ -73,13 +76,13 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'All fields required' });
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Email not found. Please register.' });
-    const match = await user.comparePassword(password);
-    if (!match) return res.status(400).json({ error: 'Wrong password. Try again.' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ error: 'Wrong password. Try again.' });
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
   } catch (err) {
     console.error('login error:', err.message);
-    res.status(500).json({ error: 'Login failed. Try again.' });
+    res.status(500).json({ error: 'Login failed. Try again.', detail: err.message });
   }
 });
 
