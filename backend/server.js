@@ -8,6 +8,8 @@ import Groq from 'groq-sdk';
 import User from './models/User.js';
 import StudyPlan from './models/StudyPlan.js';
 import QuizResult from './models/QuizResult.js';
+import ChatHistory from './models/ChatHistory.js';
+import Feedback from './models/Feedback.js';
 
 const app = express();
 app.use(cors());
@@ -52,6 +54,7 @@ function extractJSON(text) {
 
 app.get('/', (req, res) => res.send('SmartEdu AI Backend Running ✅'));
 
+// ===== AUTH =====
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -86,16 +89,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.get('/api/history', auth, async (req, res) => {
-  try {
-    const plans = await StudyPlan.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(5);
-    const quizzes = await QuizResult.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(10);
-    res.json({ plans, quizzes });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
+// ===== STUDY PLAN =====
 app.post('/api/study-plan', auth, async (req, res) => {
   try {
     const { examName, examDate, expectedMarks, subjects, weakTopics, dailyHours, language, level } = req.body;
@@ -113,18 +107,27 @@ Return ONLY valid JSON, no markdown:
 {"title":"string","description":"string","totalDuration":"string","weeks":[{"week":1,"title":"string","topics":["string"],"goals":["string"]}]}`;
     const text = await callAI(prompt);
     const data = extractJSON(text);
-    await StudyPlan.create({
+    const saved = await StudyPlan.create({
       userId: req.userId, examName,
       subjects: subjects.split(',').map(s => s.trim()),
       level, dailyHours, planData: data,
     });
-    res.json(data);
+    res.json({ ...data, _id: saved._id });
   } catch (err) {
     console.error('study-plan error:', err.message);
     res.status(500).json({ error: 'Failed to generate study plan', detail: err.message });
   }
 });
-// GET single study plan by ID (for "view" from history)
+
+app.get('/api/study-plan/history', auth, async (req, res) => {
+  try {
+    const plans = await StudyPlan.find({ userId: req.userId }).sort({ createdAt: -1 });
+    res.json({ plans });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/study-plan/:id', auth, async (req, res) => {
   try {
     const plan = await StudyPlan.findOne({ _id: req.params.id, userId: req.userId });
@@ -135,7 +138,6 @@ app.get('/api/study-plan/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE a study plan
 app.delete('/api/study-plan/:id', auth, async (req, res) => {
   try {
     const result = await StudyPlan.findOneAndDelete({ _id: req.params.id, userId: req.userId });
@@ -146,13 +148,23 @@ app.delete('/api/study-plan/:id', auth, async (req, res) => {
   }
 });
 
-  app.post('/api/resources', auth, async (req, res) => {
+// ===== RESOURCES =====
+app.post('/api/resources', auth, async (req, res) => {
   try {
-    const { subjects, language } = req.body;
-    const prompt = `Suggest learning resources for these subjects: ${subjects}
+    const { subjects, examName, language } = req.body;
+    const prompt = `You are an expert exam resource curator for Indian competitive exams.
+
+Suggest REAL, well-known, specific learning resources for ${examName ? `the exam "${examName}"` : 'these subjects'} covering: ${subjects}
+
+Give EXACT, specific resource names that genuinely exist and are commonly recommended:
+- Real book titles with real author names (e.g. "Concepts of Physics by H.C. Verma", "NCERT Mathematics Class 12")
+- Real, well-known YouTube channel names relevant to ${examName || 'this exam'} in India (e.g. "Physics Wallah", "Unacademy", "Khan Academy")
+- Real official websites or platforms (e.g. NCERT, NPTEL, official exam board sites)
+
 Language: ${language || 'English'}
+
 Return ONLY valid JSON, no markdown:
-{"resources":[{"title":"string","type":"video|article|book|course","subject":"string","description":"string"}]}`;
+{"resources":[{"title":"exact real name of book/channel/website","type":"book|youtube|website|course","subject":"string","description":"string explaining why this helps for the exam"}]}`;
     const text = await callAI(prompt);
     const data = extractJSON(text);
     res.json(data);
@@ -160,6 +172,9 @@ Return ONLY valid JSON, no markdown:
     res.status(500).json({ error: 'Failed to generate resources', detail: err.message });
   }
 });
+
+// ===== QUIZ =====
+app.post('/api/quiz', auth, async (req, res) => {
   try {
     const { topic, numQuestions, difficulty, language } = req.body;
     const prompt = `Create exactly ${numQuestions || 5} multiple choice questions about: ${topic}
@@ -179,13 +194,33 @@ Return ONLY valid JSON, no markdown:
 app.post('/api/quiz/result', auth, async (req, res) => {
   try {
     const { subject, score, totalQuestions, difficulty } = req.body;
-    await QuizResult.create({ userId: req.userId, subject, score, totalQuestions, difficulty });
+    const saved = await QuizResult.create({ userId: req.userId, subject, score, totalQuestions, difficulty });
+    res.json({ success: true, _id: saved._id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/quiz/history', auth, async (req, res) => {
+  try {
+    const quizzes = await QuizResult.find({ userId: req.userId }).sort({ createdAt: -1 });
+    res.json({ quizzes });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/quiz/:id', auth, async (req, res) => {
+  try {
+    const result = await QuizResult.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+    if (!result) return res.status(404).json({ error: 'Quiz not found' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// ===== AI MENTOR =====
 app.post('/api/mentor', auth, async (req, res) => {
   try {
     const { message, history, language } = req.body;
@@ -208,6 +243,47 @@ app.post('/api/mentor', auth, async (req, res) => {
     res.json({ reply: response.choices[0].message.content.trim() });
   } catch (err) {
     res.status(500).json({ error: 'AI server error', detail: err.message });
+  }
+});
+
+app.post('/api/mentor/save', auth, async (req, res) => {
+  try {
+    const { title, messages } = req.body;
+    const saved = await ChatHistory.create({ userId: req.userId, title, messages });
+    res.json({ success: true, _id: saved._id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/mentor/history', auth, async (req, res) => {
+  try {
+    const chats = await ChatHistory.find({ userId: req.userId }).sort({ createdAt: -1 });
+    res.json({ chats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/mentor/:id', auth, async (req, res) => {
+  try {
+    const result = await ChatHistory.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+    if (!result) return res.status(404).json({ error: 'Chat not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== FEEDBACK =====
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+    await Feedback.create({ name, email, message });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

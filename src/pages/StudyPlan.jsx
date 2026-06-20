@@ -38,7 +38,7 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
       const subjectsStr = form.subjects.join(', ');
       const [planData, resData] = await Promise.all([
         generateStudyPlan(form.examName, form.examDate, form.expectedMarks, subjectsStr, form.weakTopics, form.dailyHours, language),
-        generateResources(subjectsStr, language),
+        generateResources(form.subjects, form.examName, language),
       ]);
       setPlan(planData); setResources(resData);
       setProgress(p => ({ ...p, studyPlanGenerated: true }));
