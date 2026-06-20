@@ -20,6 +20,9 @@ export default function App() {
     quizzesCompleted: 0,
     quizScores: [],
   });
+  const [mentorMessages, setMentorMessages] = useState([
+  { role: 'assistant', content: 'Hello! I am your AI Mentor 🎓\n\nAsk me anything about your studies — concepts, problems, exam tips, anything!\n\nI am here to help you 24/7.' }
+]);
 
   const handleLogout = () => {
     setUser(null);
@@ -123,7 +126,7 @@ export default function App() {
         {page === 'dashboard' && <Dashboard setPage={setPage} user={user} progress={progress} />}
         {page === 'study' && <StudyPlannerPage language={language} progress={progress} setProgress={setProgress} />}
         {page === 'quiz' && <QuizPage language={language} progress={progress} setProgress={setProgress} />}
-        {page === 'mentor' && <AIMentorPage language={language} />}
+        {page === 'mentor' && <AIMentorPage language={language} messages={mentorMessages} setMessages={setMentorMessages} />}
         {page === 'progress' && <ProgressPage progress={progress} />}
         {page === 'studyHistory' && <StudyHistoryPage />}
         {page === 'quizHistory' && <QuizHistoryPage />}
