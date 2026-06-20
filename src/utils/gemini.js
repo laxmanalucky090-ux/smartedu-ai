@@ -66,3 +66,16 @@ export async function mentorChat(message, history, language) {
   const res = await axios.post(`${API_BASE}/mentor`, { message, history, language }, { headers: authHeaders() });
   return res.data.reply;
 }
+export async function getStudyPlanHistory() {
+  const res = await axios.get(`${API_BASE}/history`, { headers: authHeaders() });
+  return res.data.plans; // array of saved plans
+}
+
+export async function getStudyPlanById(id) {
+  const res = await axios.get(`${API_BASE}/study-plan/${id}`, { headers: authHeaders() });
+  return res.data;
+}
+
+export async function deleteStudyPlan(id) {
+  await axios.delete(`${API_BASE}/study-plan/${id}`, { headers: authHeaders() });
+}

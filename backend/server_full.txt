@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -14,8 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB Error:', err));
+  .then(() => console.log('âœ… MongoDB Connected'))
+  .catch(err => console.error('âŒ MongoDB Error:', err));
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -50,7 +50,7 @@ function extractJSON(text) {
   return JSON.parse(cleaned);
 }
 
-app.get('/', (req, res) => res.send('SmartEdu AI Backend Running ✅'));
+app.get('/', (req, res) => res.send('SmartEdu AI Backend Running âœ…'));
 
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -124,29 +124,8 @@ Return ONLY valid JSON, no markdown:
     res.status(500).json({ error: 'Failed to generate study plan', detail: err.message });
   }
 });
-// GET single study plan by ID (for "view" from history)
-app.get('/api/study-plan/:id', auth, async (req, res) => {
-  try {
-    const plan = await StudyPlan.findOne({ _id: req.params.id, userId: req.userId });
-    if (!plan) return res.status(404).json({ error: 'Plan not found' });
-    res.json(plan);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// DELETE a study plan
-app.delete('/api/study-plan/:id', auth, async (req, res) => {
-  try {
-    const result = await StudyPlan.findOneAndDelete({ _id: req.params.id, userId: req.userId });
-    if (!result) return res.status(404).json({ error: 'Plan not found' });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-  app.post('/api/resources', auth, async (req, res) => {
+app.post('/api/resources', auth, async (req, res) => {
   try {
     const { subjects, language } = req.body;
     const prompt = `Suggest learning resources for these subjects: ${subjects}
@@ -160,6 +139,8 @@ Return ONLY valid JSON, no markdown:
     res.status(500).json({ error: 'Failed to generate resources', detail: err.message });
   }
 });
+
+app.post('/api/quiz', auth, async (req, res) => {
   try {
     const { topic, numQuestions, difficulty, language } = req.body;
     const prompt = `Create exactly ${numQuestions || 5} multiple choice questions about: ${topic}
