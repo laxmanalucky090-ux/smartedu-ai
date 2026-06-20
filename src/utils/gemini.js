@@ -117,3 +117,7 @@ export async function sendFeedback(name, email, message) {
   const res = await axios.post(`${API_BASE}/feedback`, { name, email, message });
   return res.data;
 }
+export async function getUserHistory() {
+  const res = await axios.get(`${API_BASE}/history`, { headers: authHeaders() });
+  return res.data;
+}
