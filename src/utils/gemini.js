@@ -99,17 +99,17 @@ export async function mentorChat(message, history, language) {
 }
 
 export async function saveChatHistory(title, messages) {
-  const res = await axios.post(`${API_BASE}/mentor/save`, { title, messages }, { headers: authHeaders() });
+  const res = await axios.post(`${API_BASE}/chat-history`, { title, messages }, { headers: authHeaders() });
   return res.data;
 }
 
 export async function getChatHistory() {
-  const res = await axios.get(`${API_BASE}/mentor/history`, { headers: authHeaders() });
-  return res.data.chats;
+  const res = await axios.get(`${API_BASE}/chat-history`, { headers: authHeaders() });
+  return res.data;
 }
 
 export async function deleteChat(id) {
-  await axios.delete(`${API_BASE}/mentor/${id}`, { headers: authHeaders() });
+  await axios.delete(`${API_BASE}/chat-history/${id}`, { headers: authHeaders() });
 }
 
 // ===== FEEDBACK =====
