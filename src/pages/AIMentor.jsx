@@ -96,7 +96,7 @@ export default function AIMentorPage({ language, messages, setMessages }) {
       <div style={{
         background: '#16162a', borderRadius: '24px', boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
         border: '1px solid #2a2a45', overflow: 'hidden',
-        display: 'flex', flexDirection: 'column', height: '650px',
+        display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)',
       }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: '#0f0f1a' }}>
           {messages.map((m, i) => (
