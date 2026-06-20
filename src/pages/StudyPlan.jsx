@@ -14,18 +14,16 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
   const [tab, setTab] = useState('plan');
 
   const levels = [
-    { id: 'beginner', label: '🌱 Beginner', desc: 'Just started' },
-    { id: 'intermediate', label: '📈 Intermediate', desc: 'Know basics' },
-    { id: 'advanced', label: '🔥 Advanced', desc: 'Strong foundation' },
+    { id: 'beginner', icon: '🌱', label: 'Beginner', desc: 'Just started', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+    { id: 'intermediate', icon: '📈', label: 'Intermediate', desc: 'Know basics', color: '#d97706', bg: '#fffbeb', border: '#fcd34d' },
+    { id: 'advanced', icon: '🔥', label: 'Advanced', desc: 'Strong foundation', color: '#dc2626', bg: '#fff7f7', border: '#fca5a5' },
   ];
 
   const popularSubjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English', 'History', 'Geography', 'Computer Science', 'Economics'];
 
   const addSubject = (sub) => {
     const s = sub.trim();
-    if (s && !form.subjects.includes(s)) {
-      setForm(f => ({ ...f, subjects: [...f.subjects, s], subjectInput: '' }));
-    }
+    if (s && !form.subjects.includes(s)) setForm(f => ({ ...f, subjects: [...f.subjects, s], subjectInput: '' }));
   };
 
   const removeSubject = (sub) => setForm(f => ({ ...f, subjects: f.subjects.filter(s => s !== sub) }));
@@ -37,8 +35,8 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
     try {
       const subjectsStr = form.subjects.join(', ');
       const [planData, resData] = await Promise.all([
-        generateStudyPlan(form.examName, form.examDate, form.expectedMarks, subjectsStr, form.weakTopics, form.dailyHours, language),
-        generateResources(form.subjects, form.examName, language),
+        generateStudyPlan(form.examName, form.examDate, form.expectedMarks, subjectsStr, form.weakTopics, form.dailyHours, language, form.level),
+        generateResources(subjectsStr, form.examName, language),
       ]);
       setPlan(planData); setResources(resData);
       setProgress(p => ({ ...p, studyPlanGenerated: true }));
@@ -50,15 +48,15 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
   const inputStyle = {
     width: '100%', padding: '13px 16px', borderRadius: '12px', fontSize: '15px',
     boxSizing: 'border-box', border: '2px solid #e2e8f0', outline: 'none',
-    fontFamily: 'inherit', background: 'white', color: '#1e293b', transition: 'all 0.2s',
+    fontFamily: 'inherit', background: '#fafbff', color: '#1e293b', transition: 'all 0.2s',
   };
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', sans-serif" }}>
+    <div style={{ fontFamily: "'Segoe UI', sans-serif", maxWidth: '900px', margin: '0 auto' }}>
       <style>{`
-        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       {/* HEADER */}
@@ -66,14 +64,14 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
         <h2 style={{ margin: '0 0 6px', fontWeight: '800', fontSize: '30px', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           📚 Study Planner
         </h2>
-        <p style={{ margin: 0, color: '#64748b', fontSize: '15px' }}>Tell us about your exam — we'll build a personalized AI study plan</p>
+        <p style={{ margin: 0, color: '#64748b', fontSize: '15px' }}>Tell us about your exam — AI will build your perfect study plan</p>
       </div>
 
       {/* FORM CARD */}
       <div style={{ background: 'white', borderRadius: '24px', padding: '36px', marginBottom: '24px', boxShadow: '0 4px 24px rgba(124,58,237,0.08)', border: '1px solid #ede9fe', animation: 'fadeUp 0.5s ease 0.1s both' }}>
 
         {/* EXAM NAME */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '28px' }}>
           <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>
             🎯 Exam Name <span style={{ color: '#ef4444' }}>*</span>
           </label>
@@ -84,75 +82,77 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
           />
         </div>
 
-        {/* CURRENT LEVEL */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>
+        {/* LEVEL */}
+        <div style={{ marginBottom: '28px' }}>
+          <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '12px', fontSize: '15px' }}>
             📊 Your Current Level <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
             {levels.map(l => (
               <div key={l.id} onClick={() => setForm(f => ({ ...f, level: l.id }))} style={{
-                padding: '16px', borderRadius: '14px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s',
-                border: `2px solid ${form.level === l.id ? '#7c3aed' : '#e2e8f0'}`,
-                background: form.level === l.id ? 'linear-gradient(135deg, #f5f3ff, #ede9fe)' : 'white',
-                boxShadow: form.level === l.id ? '0 4px 15px rgba(124,58,237,0.2)' : 'none',
-                transform: form.level === l.id ? 'translateY(-2px)' : 'translateY(0)',
+                padding: '18px 16px', borderRadius: '16px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.25s',
+                border: `2px solid ${form.level === l.id ? l.color : '#e2e8f0'}`,
+                background: form.level === l.id ? l.bg : 'white',
+                boxShadow: form.level === l.id ? `0 6px 20px ${l.border}` : '0 2px 8px rgba(0,0,0,0.04)',
+                transform: form.level === l.id ? 'translateY(-3px)' : 'translateY(0)',
               }}>
-                <div style={{ fontSize: '24px', marginBottom: '6px' }}>{l.label.split(' ')[0]}</div>
-                <div style={{ fontWeight: '700', color: form.level === l.id ? '#7c3aed' : '#1e293b', fontSize: '14px' }}>{l.label.split(' ').slice(1).join(' ')}</div>
-                <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>{l.desc}</div>
+                <div style={{ fontSize: '28px', marginBottom: '8px' }}>{l.icon}</div>
+                <div style={{ fontWeight: '800', color: form.level === l.id ? l.color : '#1e293b', fontSize: '15px', marginBottom: '4px' }}>{l.label}</div>
+                <div style={{ color: '#94a3b8', fontSize: '12px' }}>{l.desc}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* SUBJECTS */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>
+        <div style={{ marginBottom: '28px' }}>
+          <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '12px', fontSize: '15px' }}>
             📖 Subjects <span style={{ color: '#ef4444' }}>*</span>
-            <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '13px', marginLeft: '8px' }}>({form.subjects.length} added)</span>
+            <span style={{ color: '#7c3aed', fontWeight: '700', fontSize: '13px', marginLeft: '8px', background: '#ede9fe', padding: '2px 10px', borderRadius: '20px' }}>{form.subjects.length} added</span>
           </label>
 
-          {/* Quick add chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
             {popularSubjects.map(s => (
               <button key={s} onClick={() => addSubject(s)} style={{
-                padding: '6px 14px', borderRadius: '20px', border: `1px solid ${form.subjects.includes(s) ? '#7c3aed' : '#e2e8f0'}`,
-                background: form.subjects.includes(s) ? '#7c3aed' : 'white',
+                padding: '7px 16px', borderRadius: '20px',
+                border: `2px solid ${form.subjects.includes(s) ? '#7c3aed' : '#e2e8f0'}`,
+                background: form.subjects.includes(s) ? 'linear-gradient(135deg, #7c3aed, #2563eb)' : 'white',
                 color: form.subjects.includes(s) ? 'white' : '#475569',
-                cursor: 'pointer', fontSize: '13px', fontWeight: '500', fontFamily: 'inherit', transition: 'all 0.2s',
+                cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', transition: 'all 0.2s',
+                boxShadow: form.subjects.includes(s) ? '0 4px 12px rgba(124,58,237,0.3)' : 'none',
               }}>{form.subjects.includes(s) ? '✓ ' : '+ '}{s}</button>
             ))}
           </div>
 
-          {/* Custom subject input */}
           <div style={{ display: 'flex', gap: '10px' }}>
-            <input style={{ ...inputStyle, flex: 1 }} placeholder="Add custom subject..."
+            <input style={{ ...inputStyle, flex: 1 }} placeholder="Add custom subject and press Enter..."
               value={form.subjectInput} onChange={e => setForm(f => ({ ...f, subjectInput: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && addSubject(form.subjectInput)}
               onFocus={e => { e.target.style.borderColor = '#7c3aed'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.1)'; }}
               onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
             />
             <button onClick={() => addSubject(form.subjectInput)} style={{
-              padding: '13px 20px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
+              padding: '13px 22px', borderRadius: '12px', border: 'none',
+              background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
               color: 'white', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', fontSize: '14px',
-            }}>Add</button>
+              boxShadow: '0 4px 12px rgba(124,58,237,0.3)',
+            }}>+ Add</button>
           </div>
 
-          {/* Added subjects */}
           {form.subjects.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
               {form.subjects.map(s => (
                 <span key={s} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
                   background: 'linear-gradient(135deg, #ede9fe, #dbeafe)', color: '#4c1d95',
-                  padding: '6px 14px', borderRadius: '20px', fontSize: '14px', fontWeight: '600',
-                  border: '1px solid #c4b5fd',
+                  padding: '7px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: '600',
+                  border: '1px solid #c4b5fd', animation: 'slideIn 0.2s ease',
                 }}>
                   {s}
                   <button onClick={() => removeSubject(s)} style={{
-                    background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer',
-                    fontSize: '16px', lineHeight: 1, padding: '0', fontWeight: '700',
+                    background: 'rgba(124,58,237,0.15)', border: 'none', color: '#7c3aed', cursor: 'pointer',
+                    width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: '14px', fontWeight: '800', padding: 0,
                   }}>×</button>
                 </span>
               ))}
@@ -161,9 +161,9 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
         </div>
 
         {/* DATE + SCORE + HOURS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '28px' }}>
           <div>
-            <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>📅 Exam Date</label>
+            <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '14px' }}>📅 Exam Date</label>
             <input style={{ ...inputStyle, colorScheme: 'light' }} type="date" value={form.examDate}
               onChange={e => setForm(f => ({ ...f, examDate: e.target.value }))}
               onFocus={e => { e.target.style.borderColor = '#7c3aed'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.1)'; }}
@@ -171,7 +171,7 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>🎯 Target Score</label>
+            <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '14px' }}>🎯 Target Score</label>
             <input style={inputStyle} placeholder="e.g. 150/200 or 95%"
               value={form.expectedMarks} onChange={e => setForm(f => ({ ...f, expectedMarks: e.target.value }))}
               onFocus={e => { e.target.style.borderColor = '#7c3aed'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.1)'; }}
@@ -179,10 +179,10 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>⏱️ Daily Study Hours</label>
+            <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '14px' }}>⏱️ Daily Hours</label>
             <select value={form.dailyHours} onChange={e => setForm(f => ({ ...f, dailyHours: e.target.value }))}
               style={{ ...inputStyle, cursor: 'pointer' }}>
-              {[1,2,3,4,5,6,7,8,10,12].map(h => <option key={h} value={h}>{h} hour{h > 1 ? 's' : ''}/day</option>)}
+              {[1,2,3,4,5,6,7,8,10,12].map(h => <option key={h} value={h}>{h} hr{h > 1 ? 's' : ''}/day</option>)}
             </select>
           </div>
         </div>
@@ -190,7 +190,8 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
         {/* WEAK TOPICS */}
         <div style={{ marginBottom: '28px' }}>
           <label style={{ display: 'block', fontWeight: '700', color: '#1e293b', marginBottom: '10px', fontSize: '15px' }}>
-            ⚠️ Weak Topics <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '13px' }}>(optional — we'll focus extra time here)</span>
+            ⚠️ Weak Topics
+            <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '13px', marginLeft: '8px' }}>optional — AI will focus extra time here</span>
           </label>
           <input style={inputStyle} placeholder="e.g. Thermodynamics, Organic Chemistry, Integration, Genetics..."
             value={form.weakTopics} onChange={e => setForm(f => ({ ...f, weakTopics: e.target.value }))}
@@ -200,26 +201,23 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
         </div>
 
         {error && (
-          <div style={{ marginBottom: '20px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '12px', padding: '12px 16px', color: '#e11d48', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ marginBottom: '20px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '12px', padding: '14px 18px', color: '#e11d48', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             ⚠️ {error}
           </div>
         )}
 
         <button onClick={handleGenerate} disabled={loading} style={{
           width: '100%', background: loading ? '#e2e8f0' : 'linear-gradient(135deg, #7c3aed, #2563eb)',
-          color: loading ? '#94a3b8' : 'white', border: 'none', padding: '16px',
-          borderRadius: '14px', fontSize: '17px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
+          color: loading ? '#94a3b8' : 'white', border: 'none', padding: '18px',
+          borderRadius: '16px', fontSize: '17px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
           fontFamily: 'inherit', transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-          boxShadow: loading ? 'none' : '0 8px 24px rgba(124,58,237,0.35)',
+          boxShadow: loading ? 'none' : '0 8px 28px rgba(124,58,237,0.4)',
         }}
-          onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(124,58,237,0.45)'; } }}
-          onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = loading ? 'none' : '0 8px 24px rgba(124,58,237,0.35)'; }}
+          onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 36px rgba(124,58,237,0.5)'; } }}
+          onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = loading ? 'none' : '0 8px 28px rgba(124,58,237,0.4)'; }}
         >
           {loading ? (
-            <>
-              <div style={{ width: '20px', height: '20px', border: '3px solid #94a3b8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              AI is building your personalized plan...
-            </>
+            <><div style={{ width: '22px', height: '22px', border: '3px solid #94a3b8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />AI is building your personalized plan...</>
           ) : '🚀 Generate My Study Plan'}
         </button>
       </div>
@@ -227,7 +225,9 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
       {/* RESULTS */}
       {(plan || resources) && (
         <div style={{ background: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 24px rgba(124,58,237,0.08)', border: '1px solid #ede9fe', animation: 'fadeUp 0.5s ease' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', background: '#f8faff', padding: '6px', borderRadius: '16px', width: 'fit-content' }}>
+          
+          {/* TABS */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', background: '#f8faff', padding: '6px', borderRadius: '16px', width: 'fit-content', border: '1px solid #e0e7ff' }}>
             {[{ id: 'plan', label: '📋 Study Plan' }, { id: 'resources', label: '📖 Resources' }].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 padding: '10px 28px', borderRadius: '12px', border: 'none', cursor: 'pointer',
@@ -241,42 +241,54 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
 
           {tab === 'plan' && plan && (
             <div>
-              <div style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', borderRadius: '18px', padding: '28px', marginBottom: '24px', color: 'white' }}>
-                <h3 style={{ margin: '0 0 8px', fontWeight: '800', fontSize: '22px' }}>{plan.title}</h3>
-                <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{plan.description}</p>
-                <span style={{ background: 'rgba(167,139,250,0.2)', color: '#c4b5fd', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', border: '1px solid rgba(167,139,250,0.3)' }}>
-                  ⏱️ Total Duration: {plan.totalDuration}
-                </span>
+              {/* PLAN HEADER */}
+              <div style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81, #1e40af)', borderRadius: '20px', padding: '32px', marginBottom: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ position: 'absolute', bottom: '-20px', right: '80px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <h3 style={{ margin: '0 0 10px', fontWeight: '800', fontSize: '22px' }}>{plan.title}</h3>
+                  <p style={{ margin: '0 0 20px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, fontSize: '15px' }}>{plan.description}</p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(167,139,250,0.2)', color: '#c4b5fd', padding: '8px 18px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', border: '1px solid rgba(167,139,250,0.3)' }}>
+                    ⏱️ Total Duration: {plan.totalDuration}
+                  </span>
+                </div>
               </div>
 
+              {/* WEEKS */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {plan.weeks?.map((w, i) => (
                   <div key={i} style={{
-                    borderRadius: '18px', padding: '24px', border: '1px solid #ede9fe',
-                    background: i % 2 === 0 ? 'linear-gradient(135deg, #fafbff, #f5f3ff)' : 'linear-gradient(135deg, #f0fdf4, #f5f3ff)',
+                    borderRadius: '20px', padding: '24px', border: '1px solid #ede9fe',
+                    background: i % 2 === 0 ? 'linear-gradient(135deg, #fafbff, #f5f3ff)' : 'linear-gradient(135deg, #f0fdf4, #f0f9ff)',
+                    transition: 'all 0.2s', animation: `fadeUp 0.4s ease ${i * 0.08}s both`,
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
                       <div style={{
-                        width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                        width: '44px', height: '44px', borderRadius: '14px', flexShrink: 0,
                         background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '14px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', fontWeight: '800', fontSize: '13px',
+                        boxShadow: '0 4px 12px rgba(124,58,237,0.3)',
                       }}>W{w.week}</div>
-                      <h4 style={{ margin: 0, fontWeight: '800', color: '#1e293b', fontSize: '17px' }}>{w.title}</h4>
+                      <div>
+                        <h4 style={{ margin: 0, fontWeight: '800', color: '#1e293b', fontSize: '17px' }}>{w.title}</h4>
+                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '13px' }}>Week {w.week} Plan</p>
+                      </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                      <div>
-                        <p style={{ margin: '0 0 10px', fontWeight: '700', color: '#7c3aed', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>📌 Topics to Cover</p>
+                      <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid #ede9fe' }}>
+                        <p style={{ margin: '0 0 12px', fontWeight: '700', color: '#7c3aed', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>📌 Topics to Cover</p>
                         {w.topics?.map((t, j) => (
-                          <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '7px' }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed', flexShrink: 0, marginTop: '6px' }} />
+                          <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #2563eb)', flexShrink: 0, marginTop: '6px' }} />
                             <span style={{ color: '#374151', fontSize: '14px', lineHeight: 1.5 }}>{t}</span>
                           </div>
                         ))}
                       </div>
-                      <div>
-                        <p style={{ margin: '0 0 10px', fontWeight: '700', color: '#2563eb', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>✅ Weekly Goals</p>
+                      <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid #dbeafe' }}>
+                        <p style={{ margin: '0 0 12px', fontWeight: '700', color: '#2563eb', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>✅ Weekly Goals</p>
                         {w.goals?.map((g, j) => (
-                          <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '7px' }}>
+                          <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
                             <span style={{ fontSize: '14px', flexShrink: 0 }}>🎯</span>
                             <span style={{ color: '#374151', fontSize: '14px', lineHeight: 1.5 }}>{g}</span>
                           </div>
@@ -291,24 +303,40 @@ export default function StudyPlannerPage({ language, progress, setProgress }) {
 
           {tab === 'resources' && resources && (
             <div>
-              <h3 style={{ margin: '0 0 20px', fontWeight: '800', fontSize: '22px', color: '#1e293b' }}>📖 Recommended Resources by Subject</h3>
+              <h3 style={{ margin: '0 0 20px', fontWeight: '800', fontSize: '22px', color: '#1e293b' }}>📖 Recommended Resources</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {resources.map((r, i) => (
-                  <div key={i} style={{
-                    background: 'linear-gradient(135deg, #f0fdf4, #f0f9ff)', borderRadius: '16px',
-                    padding: '20px 24px', borderLeft: '4px solid #16a34a',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px',
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: '0 0 6px', color: '#15803d', fontWeight: '700', fontSize: '16px' }}>{r.title}</h4>
-                      <p style={{ margin: 0, color: '#374151', fontSize: '14px', lineHeight: 1.6 }}>{r.description}</p>
+                {resources.map((r, i) => {
+                  const typeConfig = {
+                    book: { icon: '📚', color: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
+                    youtube: { icon: '▶️', color: '#dc2626', bg: '#fff7f7', border: '#fca5a5' },
+                    website: { icon: '🌐', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+                    course: { icon: '🎓', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+                  };
+                  const config = typeConfig[r.type] || typeConfig.website;
+                  return (
+                    <div key={i} style={{
+                      background: 'white', borderRadius: '16px', padding: '20px 24px',
+                      border: `1px solid ${config.border}`, display: 'flex',
+                      justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                      animation: `fadeUp 0.4s ease ${i * 0.06}s both`,
+                    }}>
+                      <div style={{ display: 'flex', gap: '14px', flex: 1 }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0, border: `1px solid ${config.border}` }}>
+                          {config.icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: '0 0 6px', color: '#1e293b', fontWeight: '700', fontSize: '15px' }}>{r.title}</h4>
+                          <p style={{ margin: 0, color: '#64748b', fontSize: '13px', lineHeight: 1.6 }}>{r.description}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, alignItems: 'flex-end' }}>
+                        <span style={{ background: config.bg, color: config.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: `1px solid ${config.border}` }}>{r.type}</span>
+                        {r.subject && <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>{r.subject}</span>}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, alignItems: 'flex-end' }}>
-                      <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' }}>{r.type}</span>
-                      {r.subject && <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' }}>{r.subject}</span>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
