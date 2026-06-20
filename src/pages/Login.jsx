@@ -190,7 +190,7 @@ export default function LoginPage({ onLogin }) {
           </div>
 
           {/* RIGHT PANEL */}
-          <div style={{ width: '480px', background: '#ffffff', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 48px', boxShadow: '-20px 0 60px rgba(0,0,0,0.15)' }}>
+          <div style={{ width: '440px', minWidth: '340px', background: '#ffffff', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 40px', boxShadow: '-20px 0 60px rgba(0,0,0,0.15)' }}>
             <div style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '30px', fontWeight: '800', color: '#0f0c29', margin: '0 0 8px' }}>
                 {isRegister ? 'Create Account 🚀' : 'Welcome back 👋'}
