@@ -18,8 +18,23 @@ export default function LoginPage({ onLogin }) {
 
   const handleSubmit = async () => {
     setError('');
-    if (!email || !password) return setError('Please fill all fields');
-    if (isRegister && !name) return setError('Please enter your name');
+
+if (!email || !password)
+  return setError('Please fill all fields');
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!emailRegex.test(email))
+  return setError('Please enter a valid email address');
+
+if (isRegister && !name)
+  return setError('Please enter your name');
+
+if (isRegister && name.trim().length < 2)
+  return setError('Name must be at least 2 characters');
+
+if (password.length < 6)
+  return setError('Password must be at least 6 characters');
     setLoading(true);
     try {
       const user = isRegister
