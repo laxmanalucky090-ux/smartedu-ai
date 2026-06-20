@@ -194,8 +194,8 @@ Return ONLY valid JSON, no markdown:
 app.post('/api/quiz/result', auth, async (req, res) => {
   try {
     const { subject, score, totalQuestions, difficulty, questions, userAnswers } = req.body;
-    const saved = await QuizResult.create({ 
-      userId: req.userId, subject, score, totalQuestions, difficulty, questions, userAnswers 
+    const saved = await QuizResult.create({
+      userId: req.userId, subject, score, totalQuestions, difficulty, questions, userAnswers
     });
     res.json({ success: true, _id: saved._id });
   } catch (err) {
@@ -248,26 +248,28 @@ app.post('/api/mentor', auth, async (req, res) => {
   }
 });
 
-app.post('/api/mentor/save', auth, async (req, res) => {
+// ===== CHAT HISTORY (matches ChatHistory.jsx: getChatHistory, deleteChat) =====
+app.post('/api/chat-history', auth, async (req, res) => {
   try {
     const { title, messages } = req.body;
-    const saved = await ChatHistory.create({ userId: req.userId, title, messages });
-    res.json({ success: true, _id: saved._id });
+    if (!messages || messages.length === 0) return res.status(400).json({ error: 'No messages to save' });
+    const chat = await ChatHistory.create({ userId: req.userId, title, messages });
+    res.json(chat);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/mentor/history', auth, async (req, res) => {
+app.get('/api/chat-history', auth, async (req, res) => {
   try {
     const chats = await ChatHistory.find({ userId: req.userId }).sort({ createdAt: -1 });
-    res.json({ chats });
+    res.json(chats);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/api/mentor/:id', auth, async (req, res) => {
+app.delete('/api/chat-history/:id', auth, async (req, res) => {
   try {
     const result = await ChatHistory.findOneAndDelete({ _id: req.params.id, userId: req.userId });
     if (!result) return res.status(404).json({ error: 'Chat not found' });
@@ -289,7 +291,6 @@ app.post('/api/feedback', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
 // ===== USER PROFILE =====
 app.get('/api/user/profile', auth, async (req, res) => {
   try {
@@ -311,4 +312,6 @@ app.put('/api/user/profile', auth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
