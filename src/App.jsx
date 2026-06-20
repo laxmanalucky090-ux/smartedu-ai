@@ -9,6 +9,7 @@ import StudyHistoryPage from './pages/StudyHistory';
 import QuizHistoryPage from './pages/QuizHistory';
 import ChatHistoryPage from './pages/ChatHistory';
 import FeedbackPage from './pages/Feedback';
+import ProfilePage from './pages/Profile';
 import { LANGUAGES, removeToken } from './utils/gemini';
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
     { id: 'quizHistory', label: '📝 Quiz History' },
     { id: 'chatHistory', label: '💬 Chat History' },
     { id: 'feedback', label: '📩 Feedback' },
+    { id: 'profile', label: '👤 Profile' },
   ];
 
   return (
@@ -132,6 +134,7 @@ export default function App() {
         {page === 'quizHistory' && <QuizHistoryPage />}
         {page === 'chatHistory' && <ChatHistoryPage />}
         {page === 'feedback' && <FeedbackPage user={user} />}
+        {page === 'profile' && <ProfilePage user={user} setUser={setUser} />}
       </div>
     </div>
   );

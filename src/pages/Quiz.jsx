@@ -29,7 +29,7 @@ export default function QuizPage({ language, progress, setProgress }) {
     const score = Math.round((correct / questions.length) * 100);
     setProgress(p => ({ ...p, quizzesCompleted: p.quizzesCompleted + 1, quizScores: [...p.quizScores, score] }));
     try {
-      await saveQuizResult(subject, correct, questions.length, difficulty);
+    await saveQuizResult(subject, correct, questions.length, difficulty, questions, answers);
     } catch {}
   };
 

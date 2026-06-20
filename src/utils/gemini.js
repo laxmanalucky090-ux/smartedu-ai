@@ -67,13 +67,22 @@ export async function generateQuiz(subject, numQuestions, difficulty, language) 
   return res.data.questions;
 }
 
-export async function saveQuizResult(subject, score, totalQuestions, difficulty) {
+export async function saveQuizResult(subject, score, totalQuestions, difficulty, questions, userAnswers) {
   const res = await axios.post(`${API_BASE}/quiz/result`, {
-    subject, score, totalQuestions, difficulty
+    subject, score, totalQuestions, difficulty, questions, userAnswers
   }, { headers: authHeaders() });
   return res.data;
 }
 
+export async function getUserProfile() {
+  const res = await axios.get(`${API_BASE}/user/profile`, { headers: authHeaders() });
+  return res.data;
+}
+
+export async function updateUserProfile(name) {
+  const res = await axios.put(`${API_BASE}/user/profile`, { name }, { headers: authHeaders() });
+  return res.data;
+}
 export async function getQuizHistory() {
   const res = await axios.get(`${API_BASE}/quiz/history`, { headers: authHeaders() });
   return res.data.quizzes;

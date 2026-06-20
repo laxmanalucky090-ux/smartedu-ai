@@ -193,8 +193,10 @@ Return ONLY valid JSON, no markdown:
 
 app.post('/api/quiz/result', auth, async (req, res) => {
   try {
-    const { subject, score, totalQuestions, difficulty } = req.body;
-    const saved = await QuizResult.create({ userId: req.userId, subject, score, totalQuestions, difficulty });
+    const { subject, score, totalQuestions, difficulty, questions, userAnswers } = req.body;
+    const saved = await QuizResult.create({ 
+      userId: req.userId, subject, score, totalQuestions, difficulty, questions, userAnswers 
+    });
     res.json({ success: true, _id: saved._id });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -288,4 +290,25 @@ app.post('/api/feedback', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+// ===== USER PROFILE =====
+app.get('/api/user/profile', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('-password');
+    const plans = await StudyPlan.countDocuments({ userId: req.userId });
+    const quizzes = await QuizResult.countDocuments({ userId: req.userId });
+    res.json({ user, stats: { plans, quizzes } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/user/profile', auth, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const user = await User.findByIdAndUpdate(req.userId, { name }, { new: true }).select('-password');
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
