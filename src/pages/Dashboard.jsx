@@ -24,43 +24,43 @@ export default function Dashboard({ setPage, user, progress }) {
 
       {/* HERO */}
       <div style={{
-        background: '#16162a',
+        background: '#23234a',
         borderRadius: '20px', padding: '36px 44px', marginBottom: '28px',
-        color: 'white', border: '1px solid #2a2a45',
+        color: 'white', border: '1px solid #38386b',
         animation: 'fadeUp 0.4s ease',
       }}>
-        <p style={{ margin: '0 0 8px', color: '#a78bfa', fontSize: '13px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>WELCOME BACK</p>
-        <h1 style={{ margin: '0 0 10px', fontSize: '32px', fontWeight: '800', color: '#f1f5f9' }}>Hello, {user.name}! 👋</h1>
-        <p style={{ margin: 0, color: '#94a3b8', fontSize: '15px' }}>Ready to continue your learning journey? Your AI mentor is waiting.</p>
+        <p style={{ margin: '0 0 8px', color: '#b7a4fb', fontSize: '13px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>WELCOME BACK</p>
+        <h1 style={{ margin: '0 0 10px', fontSize: '32px', fontWeight: '800', color: '#f8fafc' }}>Hello, {user.name}! 👋</h1>
+        <p style={{ margin: 0, color: '#b6bdd1', fontSize: '15px' }}>Ready to continue your learning journey? Your AI mentor is waiting.</p>
       </div>
 
       {/* STATS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
         {stats.map((s, i) => (
           <div key={i} style={{
-            background: '#16162a', borderRadius: '14px', padding: '22px',
-            textAlign: 'center', border: '1px solid #2a2a45',
+            background: '#23234a', borderRadius: '14px', padding: '22px',
+            textAlign: 'center', border: '1px solid #38386b',
             animation: `fadeUp 0.4s ease ${i * 0.08}s both`,
           }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#f1f5f9' }}>{s.value}</div>
-            <div style={{ fontWeight: '600', color: '#cbd5e1', marginTop: '4px', fontSize: '14px' }}>{s.label}</div>
-            <div style={{ color: '#64748b', fontSize: '12px', marginTop: '2px' }}>{s.sub}</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#f8fafc' }}>{s.value}</div>
+            <div style={{ fontWeight: '600', color: '#d6dae8', marginTop: '4px', fontSize: '14px' }}>{s.label}</div>
+            <div style={{ color: '#9098b3', fontSize: '12px', marginTop: '2px' }}>{s.sub}</div>
           </div>
         ))}
       </div>
 
       {/* FEATURE CARDS */}
-      <h2 style={{ fontWeight: '700', color: '#f1f5f9', marginBottom: '16px', fontSize: '19px' }}>What would you like to do?</h2>
+      <h2 style={{ fontWeight: '700', color: '#f8fafc', marginBottom: '16px', fontSize: '19px' }}>What would you like to do?</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
         {cards.map((c, i) => (
           <div key={c.page} onClick={() => setPage(c.page)} style={{
-            background: '#16162a', borderRadius: '16px', padding: '24px', cursor: 'pointer',
-            border: '1px solid #2a2a45', transition: 'border-color 0.2s, background 0.2s',
+            background: '#23234a', borderRadius: '16px', padding: '24px', cursor: 'pointer',
+            border: '1px solid #38386b', transition: 'border-color 0.2s, background 0.2s',
             animation: `fadeUp 0.4s ease ${0.15 + i * 0.08}s both`,
             display: 'flex', alignItems: 'flex-start', gap: '16px',
           }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = '#3d3d5c'; e.currentTarget.style.background = '#1c1c33'; }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = '#2a2a45'; e.currentTarget.style.background = '#16162a'; }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#4d4d8a'; e.currentTarget.style.background = '#292954'; }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = '#38386b'; e.currentTarget.style.background = '#23234a'; }}
           >
             <div style={{
               width: '48px', height: '48px', borderRadius: '12px', background: c.gradient,
@@ -69,9 +69,9 @@ export default function Dashboard({ setPage, user, progress }) {
               {c.icon}
             </div>
             <div>
-              <h3 style={{ margin: '0 0 6px', color: '#f1f5f9', fontWeight: '700', fontSize: '16px' }}>{c.title}</h3>
-              <p style={{ margin: '0 0 12px', color: '#94a3b8', fontSize: '13px', lineHeight: 1.5 }}>{c.desc}</p>
-              <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '600' }}>Get Started →</span>
+              <h3 style={{ margin: '0 0 6px', color: '#f8fafc', fontWeight: '700', fontSize: '16px' }}>{c.title}</h3>
+              <p style={{ margin: '0 0 12px', color: '#b6bdd1', fontSize: '13px', lineHeight: 1.5 }}>{c.desc}</p>
+              <span style={{ color: '#b7a4fb', fontSize: '13px', fontWeight: '600' }}>Get Started →</span>
             </div>
           </div>
         ))}
