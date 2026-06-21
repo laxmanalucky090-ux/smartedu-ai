@@ -77,16 +77,18 @@ export default function App() {
 
   if (!user) return <LoginPage onLogin={setUser} />;
 
+  // Primary nav — shown in sidebar "MAIN" section AND mobile bottom bar (keep to 5 for bottom nav)
   const navItems = [
     { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
     { id: 'study', icon: '📚', label: 'Study Plan' },
     { id: 'quiz', icon: '📝', label: 'Quiz' },
     { id: 'mentor', icon: '🤖', label: 'AI Mentor' },
-    { id: 'progress', icon: '📊', label: 'Progress' },
     { id: 'pyqs', icon: '📜', label: 'PYQs' },
   ];
 
+  // Secondary nav — shown in sidebar "HISTORY" section (desktop/sidebar only, not in bottom bar)
   const secondaryItems = [
+    { id: 'progress', icon: '📊', label: 'Progress' },
     { id: 'studyHistory', icon: '📋', label: 'Study History' },
     { id: 'quizHistory', icon: '🏆', label: 'Quiz History' },
     { id: 'chatHistory', icon: '💬', label: 'Chat History' },
