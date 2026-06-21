@@ -171,3 +171,4 @@ export default function ProgressPage({ progress }) {
       </div>
     </div>
   );
+}
