@@ -190,7 +190,7 @@ export default function LoginPage({ onLogin }) {
             </div>
             <h1 style={{ color: 'white', fontSize: '28px', fontWeight: '800', margin: '0 0 4px', lineHeight: 1.2 }}>
               Study smarter.<br />Score higher.<br />
-              <span style={{ background: COLORS.accent, color: COLORS.textDark, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>No guesswork.</span>
+              <span style={{ background: COLORS.accent, color: COLORS.textDark, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>The AI-powered way.</span>
             </h1>
             <p style={{ color: COLORS.textMutedOnDark, fontSize: '14px', margin: '14px 0 0', lineHeight: 1.6 }}>
               Learn smarter, not harder — with an AI mentor that builds your plan, drills your weak topics, and tracks every win.
@@ -267,7 +267,7 @@ export default function LoginPage({ onLogin }) {
               </div>
               <h1 style={{ color: 'white', fontSize: '48px', fontWeight: '800', lineHeight: 1.1, margin: '0 0 24px' }}>
                 Study smarter.<br />Score higher.<br />
-                <span style={{ background: COLORS.accent, color: COLORS.textDark, padding: '2px 10px', borderRadius: '6px', display: 'inline-block', marginTop: '6px' }}>No guesswork.</span>
+                <span style={{ background: COLORS.accent, color: COLORS.textDark, padding: '2px 10px', borderRadius: '6px', display: 'inline-block', marginTop: '6px' }}>The AI-powered way.</span>
               </h1>
               <p style={{ color: COLORS.textMutedOnDark, fontSize: '17px', lineHeight: 1.7, marginBottom: '40px' }}>
                 Learn smarter, not harder — with AI guidance that builds your study plan, drills your weak topics, and tracks your progress, so every hour you study actually counts.

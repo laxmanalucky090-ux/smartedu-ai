@@ -222,6 +222,7 @@ app.delete('/api/quiz/:id', auth, async (req, res) => {
   }
 });
 // ===== PYQs (Previous Year Questions) =====
+// ===== PYQs (Previous Year Questions) =====
 app.post('/api/pyqs', auth, async (req, res) => {
   try {
     const { examName, subject, numQuestions, language } = req.body;
@@ -232,11 +233,20 @@ app.post('/api/pyqs', auth, async (req, res) => {
 
 These should match the actual difficulty, style, and format typically seen in real ${examName} previous year papers for ${subject}.
 
-For each question, give the full step-by-step explanation of how to arrive at the answer, not just the final answer.
+For each question, give the full step-by-step explanation of how to arrive at the answer, not just the final answer. Keep each explanation focused and concise (3-5 sentences) so the full response fits.
 
 Return ONLY valid JSON, no markdown:
 {"questions":[{"question":"string","options":["string","string","string","string"],"correctAnswer":"string","explanation":"detailed step-by-step explanation string","year":"approximate year this style of question commonly appears, e.g. 2021-2023"}]}`;
-    const text = await callAI(prompt);
+
+    // PYQs need more tokens than other features since they include full explanations
+    // and can be requested in larger batches (up to 20 questions)
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 8000,
+      temperature: 0.7,
+    });
+    const text = response.choices[0].message.content;
     const data = extractJSON(text);
     res.json(data);
   } catch (err) {
@@ -244,6 +254,7 @@ Return ONLY valid JSON, no markdown:
     res.status(500).json({ error: 'Failed to generate PYQs', detail: err.message });
   }
 });
+
 // ===== AI MENTOR =====
 app.post('/api/mentor', auth, async (req, res) => {
   try {
