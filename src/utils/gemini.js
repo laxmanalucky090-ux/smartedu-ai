@@ -121,3 +121,9 @@ export async function getUserHistory() {
   const res = await axios.get(`${API_BASE}/history`, { headers: authHeaders() });
   return res.data;
 }
+export async function generatePYQs(examName, subject, numQuestions, language) {
+  const res = await axios.post(`${API_BASE}/pyqs`, {
+    examName, subject, numQuestions, language
+  }, { headers: authHeaders() });
+  return res.data.questions;
+}

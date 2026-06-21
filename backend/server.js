@@ -221,7 +221,29 @@ app.delete('/api/quiz/:id', auth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ===== PYQs (Previous Year Questions) =====
+app.post('/api/pyqs', auth, async (req, res) => {
+  try {
+    const { examName, subject, numQuestions, language } = req.body;
+    const prompt = `You are an expert in Indian competitive exams. Generate exactly ${numQuestions || 5} realistic previous-year-style exam questions for:
+- Exam: ${examName}
+- Subject: ${subject}
+- Language: ${language || 'English'}
 
+These should match the actual difficulty, style, and format typically seen in real ${examName} previous year papers for ${subject}.
+
+For each question, give the full step-by-step explanation of how to arrive at the answer, not just the final answer.
+
+Return ONLY valid JSON, no markdown:
+{"questions":[{"question":"string","options":["string","string","string","string"],"correctAnswer":"string","explanation":"detailed step-by-step explanation string","year":"approximate year this style of question commonly appears, e.g. 2021-2023"}]}`;
+    const text = await callAI(prompt);
+    const data = extractJSON(text);
+    res.json(data);
+  } catch (err) {
+    console.error('pyqs error:', err.message);
+    res.status(500).json({ error: 'Failed to generate PYQs', detail: err.message });
+  }
+});
 // ===== AI MENTOR =====
 app.post('/api/mentor', auth, async (req, res) => {
   try {

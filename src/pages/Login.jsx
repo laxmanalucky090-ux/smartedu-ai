@@ -163,9 +163,8 @@ export default function LoginPage({ onLogin }) {
         <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: COLORS.bgDark, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px' }}>🎓</div>
         <span style={{ fontWeight: '800', fontSize: isMobile ? '15px' : '17px', color: COLORS.textDark }}>SmartEdu<span style={{ color: '#9CA3AF' }}>.AI</span></span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '999px', background: '#F1F1EC', fontSize: '12px', fontWeight: '700', color: '#374151' }}>
-        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
-        {!isMobile && 'AI · '}Online
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '999px', background: 'rgba(215,255,62,0.15)', fontSize: '12px', fontWeight: '700', color: '#374151' }}>
+        ✦ {isMobile ? 'Learn smarter' : 'Learn smarter, not harder'}
       </div>
     </div>
   );
@@ -194,7 +193,7 @@ export default function LoginPage({ onLogin }) {
               <span style={{ background: COLORS.accent, color: COLORS.textDark, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>No guesswork.</span>
             </h1>
             <p style={{ color: COLORS.textMutedOnDark, fontSize: '14px', margin: '14px 0 0', lineHeight: 1.6 }}>
-              An AI mentor that builds your study plan, drills your weak topics, and tracks your progress.
+              Learn smarter, not harder — with an AI mentor that builds your plan, drills your weak topics, and tracks every win.
             </p>
           </div>
 
@@ -271,7 +270,7 @@ export default function LoginPage({ onLogin }) {
                 <span style={{ background: COLORS.accent, color: COLORS.textDark, padding: '2px 10px', borderRadius: '6px', display: 'inline-block', marginTop: '6px' }}>No guesswork.</span>
               </h1>
               <p style={{ color: COLORS.textMutedOnDark, fontSize: '17px', lineHeight: 1.7, marginBottom: '40px' }}>
-                An AI mentor that builds your study plan, drills your weak topics, and tracks your progress — so every hour you study actually counts.
+                Learn smarter, not harder — with AI guidance that builds your study plan, drills your weak topics, and tracks your progress, so every hour you study actually counts.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '60px' }}>
                 {FEATURES.map((f, i) => (

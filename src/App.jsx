@@ -1,3 +1,4 @@
+import PYQsPage from './pages/PYQs';
 import { useState, useEffect } from 'react';
 import LoginPage from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -82,6 +83,7 @@ export default function App() {
     { id: 'quiz', icon: '📝', label: 'Quiz' },
     { id: 'mentor', icon: '🤖', label: 'AI Mentor' },
     { id: 'progress', icon: '📊', label: 'Progress' },
+    { id: 'pyqs', icon: '📜', label: 'PYQs' },
   ];
 
   const secondaryItems = [
@@ -264,6 +266,7 @@ export default function App() {
           {page === 'study' && <StudyPlannerPage language={language} progress={progress} setProgress={setProgress} />}
           {page === 'quiz' && <QuizPage language={language} progress={progress} setProgress={setProgress} />}
           {page === 'mentor' && <AIMentorPage language={language} messages={mentorMessages} setMessages={setMentorMessages} />}
+          {page === 'pyqs' && <PYQsPage language={language} />}
           {page === 'progress' && <ProgressPage progress={progress} />}
           {page === 'studyHistory' && <StudyHistoryPage />}
           {page === 'quizHistory' && <QuizHistoryPage />}
