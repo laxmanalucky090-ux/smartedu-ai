@@ -12,19 +12,10 @@ import ChatHistoryPage from './pages/ChatHistory';
 import FeedbackPage from './pages/Feedback';
 import ProfilePage from './pages/Profile';
 import { LANGUAGES, removeToken, getUserHistory } from './utils/gemini';
-
-const COLORS = {
-  bg: '#0A0A0A',
-  card: '#111111',
-  cardAlt: '#181818',
-  accent: '#D7FF3E',
-  accentDark: '#A8E000',
-  text: '#FFFFFF',
-  textMuted: '#A1A1AA',
-  border: 'rgba(255,255,255,0.08)',
-};
+import { useTheme } from './context/ThemeContext';
 
 export default function App() {
+  const { mode, toggleTheme, COLORS } = useTheme();
   const [user, setUser] = useState(null);
   const [page, setPage] = useState('dashboard');
   const [language, setLanguage] = useState('English');
@@ -77,7 +68,6 @@ export default function App() {
 
   if (!user) return <LoginPage onLogin={setUser} />;
 
-  // Primary nav — shown in sidebar "MAIN" section AND mobile bottom bar (keep to 5 for bottom nav)
   const navItems = [
     { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
     { id: 'study', icon: '📚', label: 'Study Plan' },
@@ -86,7 +76,6 @@ export default function App() {
     { id: 'pyqs', icon: '📜', label: 'PYQs' },
   ];
 
-  // Secondary nav — shown in sidebar "HISTORY" section (desktop/sidebar only, not in bottom bar)
   const secondaryItems = [
     { id: 'progress', icon: '📊', label: 'Progress' },
     { id: 'studyHistory', icon: '📋', label: 'Study History' },
@@ -99,7 +88,7 @@ export default function App() {
   const currentPage = allItems.find(i => i.id === page);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Segoe UI', sans-serif", background: COLORS.bg }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Segoe UI', sans-serif", background: COLORS.bg, transition: 'background 0.3s ease' }}>
       <style>{`
         @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideInLeft { from{opacity:0;transform:translateX(-100%)} to{opacity:1;transform:translateX(0)} }
@@ -109,8 +98,8 @@ export default function App() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${COLORS.accent}; border-radius: 99px; }
         .nav-btn { transition: all 0.2s !important; }
-        .nav-btn:hover { background: rgba(215,255,62,0.08) !important; color: ${COLORS.accent} !important; }
-        .nav-btn.active { background: linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDark}) !important; color: #0A0A0A !important; box-shadow: 0 4px 15px rgba(215,255,62,0.3) !important; }
+        .nav-btn:hover { background: rgba(168,224,0,0.1) !important; color: ${COLORS.accent} !important; }
+        .nav-btn.active { background: linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDark}) !important; color: #0A0A0A !important; box-shadow: 0 4px 15px rgba(168,224,0,0.3) !important; }
         @media (max-width: 768px) {
           .mobile-grid-2 { grid-template-columns: 1fr 1fr !important; }
           .mobile-grid-1 { grid-template-columns: 1fr !important; }
@@ -119,7 +108,6 @@ export default function App() {
         }
       `}</style>
 
-      {/* MOBILE OVERLAY */}
       {isMobile && sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
@@ -127,7 +115,6 @@ export default function App() {
         }} />
       )}
 
-      {/* SIDEBAR */}
       <div style={{
         width: '240px',
         minHeight: '100vh',
@@ -140,16 +127,15 @@ export default function App() {
         left: 0,
         height: '100vh',
         overflow: 'hidden',
-        boxShadow: isMobile ? '8px 0 32px rgba(0,0,0,0.5)' : '4px 0 24px rgba(0,0,0,0.3)',
+        boxShadow: isMobile ? '8px 0 32px rgba(0,0,0,0.5)' : '4px 0 24px rgba(0,0,0,0.15)',
         flexShrink: 0,
         zIndex: 100,
         transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
-        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease',
       }}>
-        {/* LOGO */}
         <div style={{ padding: '20px 16px', borderBottom: `1px solid ${COLORS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '68px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0, boxShadow: '0 4px 12px rgba(215,255,62,0.3)' }}>🎓</div>
+            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0, boxShadow: '0 4px 12px rgba(168,224,0,0.3)' }}>🎓</div>
             <span style={{ fontWeight: '800', fontSize: '17px', background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDark})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', whiteSpace: 'nowrap' }}>SmartEdu AI</span>
           </div>
           {isMobile && (
@@ -157,7 +143,6 @@ export default function App() {
           )}
         </div>
 
-        {/* NAV */}
         <div style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
           <p style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, letterSpacing: '1.5px', textTransform: 'uppercase', margin: '8px 8px 8px' }}>MAIN</p>
           {navItems.map(item => (
@@ -190,7 +175,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* USER BOTTOM */}
         <div style={{ padding: '12px 10px', borderTop: `1px solid ${COLORS.border}` }}>
           <button className={`nav-btn ${page === 'profile' ? 'active' : ''}`}
             onClick={() => navigateTo('profile')} style={{
@@ -218,15 +202,13 @@ export default function App() {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflow: 'hidden', minWidth: 0 }}>
 
-        {/* TOP BAR */}
         <div style={{
           height: '64px', background: COLORS.card, borderBottom: `1px solid ${COLORS.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 16px', position: 'sticky', top: 0, zIndex: 40,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.15)', transition: 'background 0.3s ease',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
@@ -240,6 +222,14 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={toggleTheme} title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} style={{
+              width: '38px', height: '38px', borderRadius: '10px', border: `1px solid ${COLORS.border}`,
+              background: COLORS.cardAlt, cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: '17px', flexShrink: 0,
+            }}>
+              {mode === 'dark' ? '☀️' : '🌙'}
+            </button>
+
             {!isMobile && (
               <select value={language} onChange={e => setLanguage(e.target.value)} style={{
                 padding: '7px 12px', borderRadius: '10px', border: `1px solid ${COLORS.border}`,
@@ -250,8 +240,8 @@ export default function App() {
             )}
             <button onClick={() => navigateTo('profile')} style={{
               display: 'flex', alignItems: 'center', gap: '8px',
-              background: 'rgba(215,255,62,0.08)',
-              border: '1px solid rgba(215,255,62,0.3)', borderRadius: '12px',
+              background: 'rgba(168,224,0,0.08)',
+              border: '1px solid rgba(168,224,0,0.3)', borderRadius: '12px',
               padding: '7px 12px', cursor: 'pointer', fontFamily: 'inherit',
             }}>
               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0A0A', fontWeight: '800', fontSize: '12px' }}>
@@ -262,7 +252,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* PAGE CONTENT */}
         <div style={{ flex: 1, padding: isMobile ? '16px' : '28px', paddingBottom: isMobile ? '90px' : '28px', overflowY: 'auto' }}>
           {page === 'dashboard' && <Dashboard setPage={setPage} user={user} progress={progress} />}
           {page === 'study' && <StudyPlannerPage language={language} progress={progress} setProgress={setProgress} />}
@@ -277,14 +266,13 @@ export default function App() {
           {page === 'profile' && <ProfilePage user={user} setUser={setUser} />}
         </div>
 
-        {/* MOBILE BOTTOM NAV */}
         {isMobile && (
           <div style={{
             position: 'fixed', bottom: 0, left: 0, right: 0,
             background: COLORS.card, borderTop: `1px solid ${COLORS.border}`,
             display: 'flex', justifyContent: 'space-around', alignItems: 'center',
             padding: '8px 0 12px', zIndex: 80,
-            boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.3)',
           }}>
             {navItems.map(item => (
               <button key={item.id} onClick={() => navigateTo(item.id)} style={{
